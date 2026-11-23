@@ -1,4 +1,4 @@
-import type { PrivacySettings, SearchEngineId, Settings } from './types.js';
+import type { ExternalEngineId, PrivacySettings, SearchEngineId, Settings } from './types.js';
 
 export const INTERNAL_SCHEME = 'lomesearch';
 
@@ -39,10 +39,24 @@ export const FIND_BAR_HEIGHT = 44;
 export const MAX_HISTORY_ENTRIES = 10_000;
 export const MAX_DOWNLOADS = 200;
 
-export const SEARCH_ENGINES: Record<Exclude<SearchEngineId, 'local' | 'custom'>, { name: string; url: string }> = {
+export const EXTERNAL_ENGINES: Record<ExternalEngineId, { name: string; url: string }> = {
+  bing: { name: 'Bing', url: 'https://www.bing.com/search?q=%s' },
   duckduckgo: { name: 'DuckDuckGo', url: 'https://duckduckgo.com/?q=%s' },
   brave: { name: 'Brave Search', url: 'https://search.brave.com/search?q=%s' },
   startpage: { name: 'Startpage', url: 'https://www.startpage.com/sp/search?query=%s' },
+  mojeek: { name: 'Mojeek', url: 'https://www.mojeek.com/search?q=%s' },
+  google: { name: 'Google', url: 'https://www.google.com/search?q=%s' },
+};
+
+/** Engines that can be the default one in the address bar. */
+export const SEARCH_ENGINES: Record<
+  Exclude<SearchEngineId, 'local' | 'custom' | 'hybrid'>,
+  { name: string; url: string }
+> = {
+  bing: EXTERNAL_ENGINES.bing,
+  duckduckgo: EXTERNAL_ENGINES.duckduckgo,
+  brave: EXTERNAL_ENGINES.brave,
+  startpage: EXTERNAL_ENGINES.startpage,
 };
 
 export const DEFAULT_PRIVACY: PrivacySettings = {
@@ -68,6 +82,7 @@ export function defaultSettings(paths: { dataDir: string; downloadDir: string })
   return {
     version: 1,
     searchEngine: 'local',
+    fallbackEngine: 'bing',
     customSearchUrl: 'https://duckduckgo.com/?q=%s',
     homepage: 'lomesearch://newtab',
     startup: 'newtab',

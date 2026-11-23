@@ -819,6 +819,16 @@ td code {
   font-size: 0.95rem;
 }
 
+.privacy-note {
+  margin: 1.75rem 0 0;
+  padding: 1rem 1.15rem;
+  border-left: 2px solid var(--accent, #1b4d3e);
+  background: var(--mascot-plate, #ffffff);
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: var(--ink-soft, #4b4b45);
+}
+
 .checklist li {
   display: grid;
   grid-template-columns: 1.4rem 1fr;

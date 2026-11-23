@@ -158,6 +158,8 @@ optional `description`, `headings`, `lang`, `fetchedAt`.
 | Method | Path | Purpose |
 | --- | --- | --- |
 | `GET` | `/search?q=…&page=1` | HTML results page; `format=json` or `Accept: application/json` returns JSON |
+| `GET` | `/search?q=…&ext=bing` | Same page, offering an external engine as a hand-off link |
+| `GET` | `/search?q=…&web=1` | Also asks the configured `--web-provider` for results (HTML only) |
 | `GET` | `/suggest?q=…` | OpenSearch-style suggestions: `[query, [terms…]]` |
 | `GET` | `/stats` | Index statistics: documents, terms, segments, sizes |
 | `GET` | `/health` | Liveness probe |
@@ -220,6 +222,41 @@ that the key is present before it queues anything. Responses:
 `lomesearch indexnow submit` speaks the same protocol to any IndexNow
 participant, so the same CLI can push a site to Bing, Yandex or this engine.
 
+### Falling back to a real search engine
+
+A local index cannot cover the whole web, so the engine page can hand a query to
+a service with its own index. There are two ways, and both are opt-in.
+
+**A link (always on).** Every results page ends with a box that sends the query
+to an external engine when you click. The link carries the query in its own
+`href`; no request leaves the machine until it is followed, and the box says so.
+The engine is Bing by default and can be changed with `?ext=` or switched off
+with `--no-ext`:
+
+```sh
+lomesearch serve                       # offers Bing
+lomesearch serve --no-ext              # local only, no hand-off box
+```
+
+**Inline results (needs credentials).** With a provider configured, the same page
+can show the external results under the local ones, above a line that names the
+service and its host:
+
+```sh
+lomesearch serve --web-provider brave --web-key "$BRAVE_SEARCH_API_KEY"
+lomesearch serve --web-provider searxng --web-url http://127.0.0.1:8080
+```
+
+`brave` uses the official Brave Web Search API (free tier available). `searxng`
+talks to any SearXNG instance you trust, including one you host yourself. Both
+are only called when the request carries `web=1`, so the default page still
+contacts nobody. A provider failure never hides the local results: the page says
+what went wrong and keeps going. Neither the query nor the results are cached or
+written to disk.
+
+Bing has no public search API any more (the Bing Search APIs were retired in
+2025), which is why it appears as a link and not as a provider.
+
 ## The browser
 
 ### Features
@@ -255,8 +292,11 @@ participant, so the same CLI can push a site to Bing, Yandex or this engine.
   `Forwarded` headers with a reserved documentation address. Off by default; it
   is a decoy for servers that trust those headers, not a proxy, and it never
   hides the real source address.
-- Search engine choice: local index (default), DuckDuckGo, Brave Search,
-  Startpage, or a custom `%s` template.
+- Search engine choice: local index (default), hybrid (local results plus a
+  hand-off to Bing, DuckDuckGo, Brave, Startpage, Mojeek or Google), Bing,
+  DuckDuckGo, Brave Search, Startpage, or a custom `%s` template. If the local
+  engine is not running, the address bar searches the fallback engine instead of
+  showing a connection error.
 
 ### Keyboard shortcuts
 
@@ -398,7 +438,10 @@ logic (store, URL handling, blocklist) testable without Electron.
 
 - No telemetry, no accounts, no sync, no remote logging.
 - Queries go to the local engine by default. Choosing a remote engine is explicit
-  and visible in the UI.
+  and visible in the UI: either the hybrid mode, which adds a hand-off link at the
+  bottom of the results, or one of the remote engines picked in Settings.
+- The hand-off link carries the query in the page source. Nothing is sent until
+  it is opened, and the page says which service will receive it.
 - The tracker blocklist is applied in `webRequest` before a connection is made,
   so blocked requests never reach the network.
 - Counters are aggregated per domain. The browser does not keep a log of blocked

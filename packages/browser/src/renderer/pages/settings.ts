@@ -1,4 +1,5 @@
 import type { EngineStatus, Settings } from '../../shared/types.js';
+import { EXTERNAL_ENGINES } from '../../shared/constants.js';
 import {
   button,
   card,
@@ -31,12 +32,14 @@ function privacyPatch(update: Partial<Settings['privacy']>): Promise<void> {
 main.append(
   card(
     'Search',
-    'The local index is the default engine: queries never leave the computer.',
+    'The local index is the default engine: queries never leave the computer. Hybrid keeps that promise and only offers an external engine as a link.',
     selectRow(
       'Default engine',
       'Used by the address bar and the new tab page.',
       [
         { value: 'local', label: 'LomeSearch (local index)' },
+        { value: 'hybrid', label: 'LomeSearch, then an external engine' },
+        { value: 'bing', label: 'Bing' },
         { value: 'duckduckgo', label: 'DuckDuckGo' },
         { value: 'brave', label: 'Brave Search' },
         { value: 'startpage', label: 'Startpage' },
@@ -44,6 +47,16 @@ main.append(
       ],
       current.searchEngine,
       (value) => patch({ searchEngine: value as Settings['searchEngine'] }),
+    ),
+    selectRow(
+      'Fallback engine',
+      'Offered by the hybrid mode, and used when the local engine is not running. The query only leaves when you follow the link.',
+      (Object.keys(EXTERNAL_ENGINES) as Settings['fallbackEngine'][]).map((id) => ({
+        value: id,
+        label: EXTERNAL_ENGINES[id].name,
+      })),
+      current.fallbackEngine,
+      (value) => patch({ fallbackEngine: value as Settings['fallbackEngine'] }),
     ),
     inputRow(
       'Custom engine URL',

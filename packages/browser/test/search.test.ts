@@ -113,3 +113,45 @@ test('isInternalUrl and engineName cover every engine', () => {
   assert.equal(engineName({ ...settings, searchEngine: 'duckduckgo' }), 'DuckDuckGo');
   assert.equal(engineName({ ...settings, searchEngine: 'custom' }), 'custom engine');
 });
+
+test('hybrid mode keeps local results and names the fallback engine', () => {
+  const hybrid = { ...settings, searchEngine: 'hybrid' as const, fallbackEngine: 'bing' as const };
+  assert.equal(
+    buildSearchUrl(hybrid, status, 'due gatti'),
+    'http://127.0.0.1:7717/search?q=due%20gatti&ext=bing&web=1',
+  );
+  assert.equal(engineName(hybrid), 'LomeSearch + Bing');
+
+  const mojeek = { ...hybrid, fallbackEngine: 'mojeek' as const };
+  assert.equal(buildSearchUrl(mojeek, status, 'x'), 'http://127.0.0.1:7717/search?q=x&ext=mojeek&web=1');
+  assert.equal(engineName(mojeek), 'LomeSearch + Mojeek');
+});
+
+test('a stopped engine falls back to the chosen external engine', () => {
+  const stopped: EngineStatus = { ...status, running: false, error: 'exited' };
+  assert.equal(
+    buildSearchUrl({ ...settings, searchEngine: 'local' }, stopped, 'privacy'),
+    'https://www.bing.com/search?q=privacy',
+  );
+  assert.equal(
+    buildSearchUrl({ ...settings, searchEngine: 'local', fallbackEngine: 'duckduckgo' }, stopped, 'a b'),
+    'https://duckduckgo.com/?q=a%20b',
+  );
+  assert.equal(
+    buildSearchUrl({ ...settings, searchEngine: 'hybrid' }, stopped, 'privacy'),
+    'https://www.bing.com/search?q=privacy',
+  );
+  // A chosen external engine is used as-is, never redirected twice.
+  assert.equal(
+    buildSearchUrl({ ...settings, searchEngine: 'startpage' }, stopped, 'privacy'),
+    'https://www.startpage.com/sp/search?query=privacy',
+  );
+});
+
+test('bing is selectable as the default engine', () => {
+  assert.equal(
+    buildSearchUrl({ ...settings, searchEngine: 'bing' }, status, 'privacy'),
+    'https://www.bing.com/search?q=privacy',
+  );
+  assert.equal(engineName({ ...settings, searchEngine: 'bing' }), 'Bing');
+});

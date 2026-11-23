@@ -1,5 +1,6 @@
 import { escapeHtml } from '../query/snippet.js';
 import type { SearchResponse, SearchResult } from '../index/index.js';
+import type { WebResult } from '../web/provider.js';
 
 /**
  * Server-rendered result pages.
@@ -94,6 +95,32 @@ p.snippet { margin: 0; font-size: 15px; color: var(--text); }
 mark { background: var(--mark); color: var(--mark-text); padding: 0 1px; border-radius: 2px; }
 .notice { background: var(--accent-soft); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; font-size: 14px; }
 .empty { padding: 32px 0; }
+.web { margin-top: 34px; padding-top: 18px; border-top: 1px solid var(--line); }
+.web-head { margin: 0 0 4px; font-size: 13px; color: var(--muted); }
+.web-head strong { color: var(--text); font-weight: 600; }
+.web-warn { margin: 0 0 4px; font-size: 13px; color: var(--danger, var(--muted)); }
+.ext {
+  margin: 28px 0 0;
+  padding: 16px 18px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+}
+.ext h2 { margin: 0 0 6px; font-size: 15px; }
+.ext p { margin: 0 0 14px; font-size: 13px; color: var(--muted); }
+.ext a.go {
+  display: inline-block;
+  padding: 10px 16px;
+  border-radius: 8px;
+  background: var(--accent);
+  color: var(--surface);
+  font-size: 14px;
+  font-weight: 600;
+}
+.ext a.go:hover { text-decoration: none; }
+@media (prefers-color-scheme: dark) {
+  .ext a.go { color: #10120f; }
+}
 .empty .mascot {
   display: block;
   width: 64px;
@@ -116,10 +143,36 @@ footer a { color: var(--muted); text-decoration: underline; }
 }
 `;
 
+export interface ExternalOffer {
+  /** Engine id, kept so paging links can carry the choice. */
+  id: string;
+  name: string;
+  href: string;
+}
+
+export interface WebResultsBlock {
+  name: string;
+  host: string;
+  items: WebResult[];
+  error: string | null;
+}
+
 export interface RenderContext {
   origin: string;
   engineHost: string;
   indexStats: { documents: number; segments: number; indexedTerms: number };
+  /** External engine offered as a link; nothing is sent until it is opened. */
+  externalOffer?: ExternalOffer;
+  /** Results fetched from the configured provider for this request. */
+  webResults?: WebResultsBlock;
+}
+
+/** Extra `&…` pairs that keep the external-search state across links. */
+function stateQuery(context: RenderContext): string {
+  const parts: string[] = [];
+  if (context.externalOffer) parts.push(`ext=${encodeURIComponent(context.externalOffer.id)}`);
+  if (context.webResults) parts.push('web=1');
+  return parts.length > 0 ? `&${parts.join('&')}` : '';
 }
 
 export function renderSearchPage(
@@ -128,15 +181,16 @@ export function renderSearchPage(
   response: SearchResponse | null,
   page: number,
 ): string {
-  const body = response
-    ? renderResults(context, query, response, page)
-    : renderHome(context);
-  return pageShell(context, query, body);
+  const parts = [
+    response ? renderResults(context, query, response, page) : renderHome(context),
+    renderWebResults(context),
+    renderExternalOffer(context, query, response?.results.length ?? 0),
+  ].filter((part) => part.length > 0);
+  return pageShell(context, query, `<main>${parts.join('\n')}</main>`);
 }
 
 function renderHome(context: RenderContext): string {
   return `
-<main>
   <div class="notice">
     Local search engine: queries are not logged, there are no cookies, and no
     request leaves this machine.
@@ -145,8 +199,7 @@ function renderHome(context: RenderContext): string {
     <div><strong>${formatNumber(context.indexStats.documents)}</strong>documents indexed</div>
     <div><strong>${formatNumber(context.indexStats.indexedTerms)}</strong>terms in the index</div>
     <div><strong>${formatNumber(context.indexStats.segments)}</strong>segments</div>
-  </div>
-</main>`;
+  </div>`;
 }
 
 function renderResults(
@@ -157,17 +210,16 @@ function renderResults(
 ): string {
   if (response.results.length === 0) {
     const suggestion = response.suggestion
-      ? `<p class="notice">Did you mean <a href="/search?q=${encodeURIComponent(response.suggestion)}">${escapeHtml(response.suggestion)}</a>?</p>`
+      ? `<p class="notice">Did you mean <a href="/search?q=${encodeURIComponent(response.suggestion)}${stateQuery(context)}">${escapeHtml(response.suggestion)}</a>?</p>`
       : '';
-    return `<main>
+    return `
   <p class="meta">No results for <strong>${escapeHtml(query)}</strong> in ${response.tookMs.toFixed(1)} ms.</p>
   ${suggestion}
   <div class="empty">
     <img class="mascot" src="/mascot.svg" width="64" height="64" alt="">
     <h2>No document matches the query</h2>
     <p>Try fewer words, without quotes, or add more pages to the index with <code>lomesearch crawl</code>.</p>
-  </div>
-</main>`;
+  </div>`;
   }
 
   const items = response.results.map((result) => renderResult(result)).join('\n');
@@ -178,31 +230,82 @@ function renderResults(
     : '';
   const suggestion =
     response.suggestion && response.results.length > 0
-      ? `<p class="meta">Suggestion: <a href="/search?q=${encodeURIComponent(response.suggestion)}">${escapeHtml(response.suggestion)}</a></p>`
+      ? `<p class="meta">Suggestion: <a href="/search?q=${encodeURIComponent(response.suggestion)}${stateQuery(context)}">${escapeHtml(response.suggestion)}</a></p>`
       : '';
 
   const perPage = 10;
   const pager: string[] = [];
   if (page > 1) {
     pager.push(
-      `<a rel="prev" href="/search?q=${encodeURIComponent(query)}&page=${page - 1}">Previous page</a>`,
+      `<a rel="prev" href="/search?q=${encodeURIComponent(query)}&page=${page - 1}${stateQuery(context)}">Previous page</a>`,
     );
   }
   if (response.results.length >= perPage) {
     pager.push(
-      `<a rel="next" href="/search?q=${encodeURIComponent(query)}&page=${page + 1}">Next page</a>`,
+      `<a rel="next" href="/search?q=${encodeURIComponent(query)}&page=${page + 1}${stateQuery(context)}">Next page</a>`,
     );
   }
 
-  return `<main>
+  return `
   <p class="meta">${total} results in ${response.tookMs.toFixed(1)} ms &middot; no query logged</p>
   ${relaxed}
   ${suggestion}
   <ol class="results">
     ${items}
   </ol>
-  ${pager.length > 0 ? `<nav class="pager">${pager.join('')}</nav>` : ''}
-</main>`;
+  ${pager.length > 0 ? `<nav class="pager">${pager.join('')}</nav>` : ''}`;
+}
+
+function renderWebResults(context: RenderContext): string {
+  const block = context.webResults;
+  if (!block) return '';
+  if (block.error) {
+    return `<section class="web">
+  <p class="web-warn">${escapeHtml(block.name)} did not answer: ${escapeHtml(block.error)}. Local results above are unaffected.</p>
+</section>`;
+  }
+  if (block.items.length === 0) {
+    return `<section class="web">
+  <p class="web-head">No web results from <strong>${escapeHtml(block.name)}</strong> either.</p>
+</section>`;
+  }
+  const items = block.items
+    .map(
+      (item) => `<li>
+    <div class="result-site"><span>${escapeHtml(item.site)}</span><span class="dot"></span><span>${escapeHtml(item.url)}</span></div>
+    <h2 class="result-title"><a href="${escapeHtml(item.url)}" rel="noreferrer noopener">${escapeHtml(item.title)}</a></h2>
+    ${item.snippet ? `<p class="snippet">${escapeHtml(item.snippet)}</p>` : ''}
+  </li>`,
+    )
+    .join('\n');
+  return `<section class="web">
+  <p class="web-head">Web results from <strong>${escapeHtml(block.name)}</strong> &middot; this query was sent to ${escapeHtml(block.host)}</p>
+  <ol class="results">
+    ${items}
+  </ol>
+</section>`;
+}
+
+function renderExternalOffer(context: RenderContext, query: string, localResults: number): string {
+  const offer = context.externalOffer;
+  if (!offer || !query.trim()) return '';
+  const inline = context.webResults !== undefined;
+  const name = escapeHtml(offer.name);
+  const heading = inline
+    ? `Keep looking on ${name}`
+    : localResults === 0
+      ? 'Search the web instead'
+      : 'Looking for something else?';
+  const body = inline
+    ? `The link below hands the query to ${name} and keeps the extra results there.`
+    : localResults === 0
+      ? `The local index has nothing for this query. ${name} is a third party: nothing leaves this machine until you click.`
+      : `Searching ${name} sends the query to a third party. Nothing leaves this machine until you click.`;
+  return `<div class="ext">
+  <h2>${heading}</h2>
+  <p>${body}</p>
+  <a class="go" href="${escapeHtml(offer.href)}" rel="noreferrer noopener">Search &ldquo;${escapeHtml(query)}&rdquo; on ${escapeHtml(offer.name)}</a>
+</div>`;
 }
 
 function renderResult(result: SearchResult): string {
@@ -242,6 +345,8 @@ function pageShell(context: RenderContext, query: string, body: string): string 
   <form class="search" action="/search" method="get" role="search">
     <label for="q" class="visually-hidden" hidden>Search the index</label>
     <input id="q" type="search" name="q" value="${escapeHtml(query)}" placeholder="Search the local index" autocomplete="off" autofocus>
+    ${context.externalOffer ? `<input type="hidden" name="ext" value="${escapeHtml(context.externalOffer.id)}">` : ''}
+    ${context.webResults ? '<input type="hidden" name="web" value="1">' : ''}
     <button type="submit">Search</button>
   </form>
   ${body}

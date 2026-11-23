@@ -1,6 +1,6 @@
 import { button, card, el, initPage, lome, shorten, timeAgo, toast } from './common.js';
 
-const { main } = await initPage('newtab', 'New tab');
+const { main, settings } = await initPage('newtab', 'New tab');
 
 const searchInput = el('input', {
   type: 'search',
@@ -40,7 +40,14 @@ main.append(
     { class: 'hero' },
     el('div', { class: 'mark' }, 'Lome', el('span', {}, 'Search')),
     form,
-    el('div', { class: 'alt' }, 'Queries stay on this machine. ', localLink),
+    el(
+      'div',
+      { class: 'alt' },
+      settings.searchEngine === 'hybrid'
+        ? 'Local results first, the fallback engine is one click away. '
+        : 'Queries stay on this machine. ',
+      localLink,
+    ),
   ),
 );
 

@@ -8,6 +8,14 @@ import {
   type KeyVerification,
 } from '../indexnow.js';
 import { renderErrorPage, renderOpenSearch, renderSearchPage } from './render.js';
+import {
+  EXTERNAL_ENGINES,
+  externalSearchUrl,
+  isExternalEngineId,
+  type ExternalEngineId,
+  type WebProvider,
+  type WebResult,
+} from '../web/provider.js';
 
 /**
  * HTTP front end.
@@ -34,6 +42,17 @@ export interface SearchServerOptions {
   trustProxy?: boolean;
   /** Extra Host header names to accept, beyond loopback and the bind address. */
   allowedHosts?: string[];
+  /**
+   * Optional external provider. It is only queried when a request asks for it
+   * (`?web=1`), so the default page still never contacts anyone.
+   */
+  webProvider?: WebProvider;
+  /**
+   * Engine offered as a hand-off link on a results page, when the request does
+   * not name one. `null` disables the offer. The link is inert: the query only
+   * leaves when it is opened.
+   */
+  externalOffer?: ExternalEngineId | null;
 }
 
 export interface SearchServerHandle {
@@ -47,6 +66,7 @@ const VERSION = '1.0.0';
 const MAX_BODY_BYTES = 2 * 1024 * 1024;
 const MAX_PAGE = 100;
 const RESULT_PAGE_SIZE = 10;
+const WEB_RESULT_LIMIT = 8;
 
 const FAVICON = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
 <rect width="32" height="32" rx="8" fill="#1b4d3e"/>
@@ -223,6 +243,17 @@ export async function startSearchServer(options: SearchServerOptions): Promise<S
         url.searchParams.get('format') === 'json' ||
         (request.headers.accept ?? '').includes('application/json');
       const stats = index.stats();
+      const extParam = url.searchParams.get('ext');
+      const defaultOffer: ExternalEngineId | null =
+        options.externalOffer === undefined ? 'bing' : options.externalOffer;
+      const offerId: ExternalEngineId | null = isExternalEngineId(extParam) ? extParam : defaultOffer;
+      const externalOffer = offerId
+        ? { id: offerId, name: EXTERNAL_ENGINES[offerId].name, href: externalSearchUrl(offerId, query) }
+        : undefined;
+      const provider = options.webProvider;
+      const wantsWeb =
+        provider !== undefined && url.searchParams.get('web') === '1' && request.method === 'GET' && query.trim() !== '';
+      const webResults = wantsWeb && provider ? await fetchWebResults(provider, query) : undefined;
       const renderContext = {
         origin: `${url.protocol}//${request.headers.host ?? engineHost}`,
         engineHost,
@@ -231,6 +262,8 @@ export async function startSearchServer(options: SearchServerOptions): Promise<S
           segments: stats.segments,
           indexedTerms: stats.indexedTerms,
         },
+        externalOffer,
+        webResults,
       };
 
       if (!query.trim()) {
@@ -335,6 +368,25 @@ function serveKeyFile(response: ServerResponse, key: string, engineKey?: string)
   }
   response.writeHead(200, { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'no-store' });
   response.end(engineKey);
+}
+
+/**
+ * Ask the configured provider. Failures are reported on the page, never thrown:
+ * a slow or broken third party must not take the local results down with it.
+ * The log line records the provider and the reason, never the query.
+ */
+async function fetchWebResults(
+  provider: WebProvider,
+  query: string,
+): Promise<{ name: string; host: string; items: WebResult[]; error: string | null }> {
+  const base = { name: provider.name, host: provider.host };
+  try {
+    const items = await provider.search(query, WEB_RESULT_LIMIT);
+    return { ...base, items, error: null };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'unknown error';
+    return { ...base, items: [], error: message.slice(0, 120) };
+  }
 }
 
 function routeName(pathname: string): string {

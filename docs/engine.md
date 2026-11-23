@@ -147,6 +147,7 @@ never the query string, the headers or the client address.
 | Method | Path | Notes |
 | --- | --- | --- |
 | `GET` | `/search?q=…&page=N` | HTML by default, JSON with `format=json` or `Accept: application/json` |
+| `GET` | `/search?q=…&ext=<id>` | Adds the hand-off box for that engine (`bing`, `duckduckgo`, `brave`, `startpage`, `mojeek`, `google`); unknown ids fall back to the default |
 | `GET` | `/suggest?q=…` | `[query, [suggestions]]` |
 | `GET` | `/stats` | Index and process statistics |
 | `GET` | `/health` | `{ status, version, uptimeSeconds }` |
@@ -154,9 +155,32 @@ never the query string, the headers or the client address.
 | `GET` | `/<key>.txt` | IndexNow key file |
 | `POST` | `/indexnow` | IndexNow submissions |
 
+`web=1` on `/search` asks the optional provider (see below) for results on the
+same page; without a provider the parameter is ignored. The page always states
+which host received the query.
+
 Limits: 2 MiB request bodies, 120 searches per minute per client, 30 IndexNow
 submissions per minute per client. Rate-limit keys are HMACs of the client
 address with a rotating per-process salt, so they cannot be linked across runs.
+
+## External results
+
+The index covers what you crawled, which is sometimes nothing for a given query.
+Two opt-in escapes exist, and both keep the page honest about who sees the query.
+
+**Hand-off link.** Every results page carries a box that opens the query on an
+external engine. The link is inert: the query travels only when it is clicked.
+The engine is Bing unless the request says otherwise with `ext=`; `--no-ext`
+removes the box entirely.
+
+**Inline results.** `--web-provider brave --web-key …` or `--web-provider
+searxng --web-url …` lets a page that asks with `web=1` append the external
+results under the local ones. Providers implement a small interface
+(`search(query, limit)`), return normalised `{ title, url, snippet, site }`
+records, get a 5 s timeout, and are never cached. A failure renders a line saying
+what went wrong and leaves the local results untouched. Brave's Web Search API is
+the only major engine with a public JSON API; Bing retired its Search APIs in
+2025, so it is offered as a link, not as a provider.
 
 ## IndexNow
 
@@ -201,6 +225,7 @@ points it at another participant, including a local engine.
 
 ```
 lomesearch serve   [--port 7717] [--dir …] [--seed url] [--crawl] [--key …]
+                   [--web-provider brave|searxng] [--web-key …] [--web-url …] [--no-ext]
 lomesearch crawl   <url…> [--max-pages n] [--max-depth n] [--delay ms] [--json]
 lomesearch index   <file.jsonl> [--dir …]
 lomesearch search  <query…> [--json] [--page n]

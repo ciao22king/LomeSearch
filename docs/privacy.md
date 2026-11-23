@@ -189,6 +189,8 @@ directory.
 | --- | --- | --- |
 | Local engine (`127.0.0.1:7717`) | Every search, suggestion, stats refresh | Query text |
 | Configured remote engine | Only if you choose one | Query text |
+| Engine's external provider (Brave API or a SearXNG instance) | Only when the results page carries `web=1` and the engine was started with `--web-provider` | Query text |
+| Search engine behind the hand-off link (Bing by default) | Only when you click the link | Query text, in the URL |
 | The site you visit | Always | Normal browsing traffic |
 | Cloudflare DoH | DNS resolution, if enabled | Hostnames |
 | Google CDN | Only if the spellchecker is enabled | Dictionary request |
@@ -218,6 +220,7 @@ never written to disk or to the log.
 | 8 | Referer leak | Closed. Origin-only cross-site by default, downgrades dropped, policy configurable. |
 | 9 | Timezone, locale | Timezone is UTC. `navigator.languages` and `Intl` locale are left real to keep pages usable. |
 | 10 | Query metadata | Queries stay on loopback, are never logged, and the engine refuses foreign `Host` headers and cross-origin reads. |
+| 11 | Query hand-off to a third party | Explicit. The results page names the service, the link is inert until clicked, and inline external results are opt-in per engine (they come with a line saying which host received the query). |
 
 ## Reporting a problem
 

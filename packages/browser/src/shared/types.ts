@@ -5,7 +5,10 @@
  */
 
 export type ThemeMode = 'system' | 'light' | 'dark';
-export type SearchEngineId = 'local' | 'duckduckgo' | 'brave' | 'startpage' | 'custom';
+/** `hybrid` keeps local results and offers the fallback engine as a link. */
+export type SearchEngineId = 'local' | 'hybrid' | 'bing' | 'duckduckgo' | 'brave' | 'startpage' | 'custom';
+/** Engines a query can be handed to when the local index is not enough. */
+export type ExternalEngineId = 'bing' | 'duckduckgo' | 'brave' | 'startpage' | 'mojeek' | 'google';
 export type StartupMode = 'newtab' | 'restore' | 'homepage';
 
 export type WebRtcPolicy = 'disable' | 'public-interface' | 'default';
@@ -67,6 +70,8 @@ export interface ExtensionSettings {
 export interface Settings {
   version: number;
   searchEngine: SearchEngineId;
+  /** Used by `hybrid` and when the local engine is not running. */
+  fallbackEngine: ExternalEngineId;
   customSearchUrl: string;
   homepage: string;
   startup: StartupMode;

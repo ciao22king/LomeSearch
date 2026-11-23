@@ -8,6 +8,7 @@ import { SearchIndex, type IndexDocument } from './index/index.js';
 import { CrawlService } from './crawl/service.js';
 import { Crawler } from './crawl/crawler.js';
 import { startSearchServer } from './server/http.js';
+import { createWebProvider, isWebProviderId, type WebProvider } from './web/provider.js';
 import {
   IndexNowClient,
   buildKeyLocation,
@@ -47,6 +48,11 @@ serve:
   --max-pages <n>        pages per crawl (default 200)
   --delay <ms>           minimum delay per host (default 1000)
   --concurrency <n>      parallel requests (default 4)
+  --web-provider <id>    optional external results: brave | searxng
+                         (only used when a page asks with ?web=1)
+  --web-key <key>        Brave subscription token (or BRAVE_SEARCH_API_KEY)
+  --web-url <url>        SearXNG base URL (or LOMESEARCH_SEARXNG_URL)
+  --no-ext               do not offer an external engine link on result pages
 
 crawl:
   --max-pages <n>        maximum pages (default 200)
@@ -120,6 +126,24 @@ function openIndex(dir: string): SearchIndex {
   return SearchIndex.open(dir);
 }
 
+/**
+ * Build the optional external provider. Nothing is enabled implicitly: the flag
+ * must name a provider, and the credentials must be present, or the server
+ * refuses to start instead of silently falling back to local-only.
+ */
+function buildWebProvider(values: Record<string, unknown>): WebProvider | undefined {
+  const id = stringOption(values['web-provider']) ?? process.env.LOMESEARCH_WEB_PROVIDER;
+  if (!id) return undefined;
+  if (!isWebProviderId(id)) fail(`unknown --web-provider "${id}" (brave, searxng)`);
+  const apiKey = stringOption(values['web-key']) ?? process.env.BRAVE_SEARCH_API_KEY;
+  const baseUrl = stringOption(values['web-url']) ?? process.env.LOMESEARCH_SEARXNG_URL;
+  try {
+    return createWebProvider({ id, apiKey, baseUrl });
+  } catch (error) {
+    return fail(error instanceof Error ? error.message : String(error));
+  }
+}
+
 async function commandServe(argv: string[]): Promise<void> {
   const { values } = parseArgs({
     args: argv,
@@ -136,6 +160,10 @@ async function commandServe(argv: string[]): Promise<void> {
       'max-pages': { type: 'string' },
       delay: { type: 'string' },
       concurrency: { type: 'string' },
+      'web-provider': { type: 'string' },
+      'web-key': { type: 'string' },
+      'web-url': { type: 'string' },
+      ext: { type: 'boolean' },
       quiet: { type: 'boolean' },
       json: { type: 'boolean' },
     },
@@ -155,8 +183,11 @@ async function commandServe(argv: string[]): Promise<void> {
     },
   });
 
+  const webProvider = buildWebProvider(values);
   const server = await startSearchServer({
     index,
+    webProvider,
+    externalOffer: values.ext === false ? null : undefined,
     port: numberOption(values.port, DEFAULT_PORT),
     bindAddress: stringOption(values.bind) ?? '127.0.0.1',
     engineHost: stringOption(values['engine-host']),
@@ -171,6 +202,9 @@ async function commandServe(argv: string[]): Promise<void> {
   process.stdout.write(`  IndexNow           POST ${server.origin}/indexnow\n`);
   process.stdout.write(`  IndexNow key       ${server.origin}/indexnow/${key}.txt\n`);
   process.stdout.write(`  data               ${common.dir}\n`);
+  process.stdout.write(
+    `  web results        ${webProvider ? `${webProvider.name}, only on ?web=1` : 'off (local index only)'}\n`,
+  );
 
   const seeds = (values.seed as string[] | undefined) ?? [];
   if (seeds.length > 0 && values.crawl) {

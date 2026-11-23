@@ -1,5 +1,5 @@
 import type { EngineStatus, SearchEngineId, Settings, Suggestion } from '../shared/types.js';
-import { SEARCH_ENGINES } from '../shared/constants.js';
+import { EXTERNAL_ENGINES, SEARCH_ENGINES } from '../shared/constants.js';
 
 /**
  * Input handling and search URL construction.
@@ -68,17 +68,28 @@ export function engineTemplate(settings: Settings, status: EngineStatus): string
   if (settings.searchEngine === 'local') {
     return `${status.origin}/search?q=%s`;
   }
+  if (settings.searchEngine === 'hybrid') {
+    // Local results first; the engine adds its own provider's results when it
+    // has one configured (`web=1`) and always offers the fallback as a link.
+    return `${status.origin}/search?q=%s&ext=${settings.fallbackEngine}&web=1`;
+  }
   if (settings.searchEngine === 'custom') {
     return settings.customSearchUrl.includes('%s')
       ? settings.customSearchUrl
       : `${settings.customSearchUrl}${settings.customSearchUrl.includes('?') ? '&' : '?'}q=%s`;
   }
-  return SEARCH_ENGINES[settings.searchEngine as Exclude<SearchEngineId, 'local' | 'custom'>]?.url ??
+  return SEARCH_ENGINES[settings.searchEngine as Exclude<SearchEngineId, 'local' | 'custom' | 'hybrid'>]?.url ??
     SEARCH_ENGINES.duckduckgo.url;
 }
 
 export function buildSearchUrl(settings: Settings, status: EngineStatus, query: string): string {
-  return engineTemplate(settings, status).replace('%s', encodeURIComponent(query));
+  const encoded = encodeURIComponent(query);
+  // A stopped engine would only produce a connection error: search where the
+  // reader can actually get an answer.
+  if (!status.running && (settings.searchEngine === 'local' || settings.searchEngine === 'hybrid')) {
+    return EXTERNAL_ENGINES[settings.fallbackEngine].url.replace('%s', encoded);
+  }
+  return engineTemplate(settings, status).replace('%s', encoded);
 }
 
 export interface InputResolution {
@@ -110,8 +121,10 @@ export function searchSuggestions(
   if (!value) return [];
   const suggestions: Suggestion[] = [];
   const remote = settings.searchEngine === 'local'
-    ? `Search the local index`
-    : `Search with ${engineName(settings)}`;
+    ? 'Search the local index'
+    : settings.searchEngine === 'hybrid'
+      ? `Local index, then ${EXTERNAL_ENGINES[settings.fallbackEngine].name}`
+      : `Search with ${engineName(settings)}`;
   const searchEntry: Suggestion = {
     type: 'search',
     title: value,
@@ -133,8 +146,9 @@ export function searchSuggestions(
 
 export function engineName(settings: Settings): string {
   if (settings.searchEngine === 'local') return 'local LomeSearch';
+  if (settings.searchEngine === 'hybrid') return `LomeSearch + ${EXTERNAL_ENGINES[settings.fallbackEngine].name}`;
   if (settings.searchEngine === 'custom') return 'custom engine';
-  return SEARCH_ENGINES[settings.searchEngine as Exclude<SearchEngineId, 'local' | 'custom'>]?.name ?? 'DuckDuckGo';
+  return SEARCH_ENGINES[settings.searchEngine as Exclude<SearchEngineId, 'local' | 'custom' | 'hybrid'>]?.name ?? 'DuckDuckGo';
 }
 
 export function isInternalUrl(url: string): boolean {
