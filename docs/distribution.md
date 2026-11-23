@@ -8,6 +8,7 @@ npm or a build toolchain.
 | --- | --- | --- |
 | Windows | `LomeSearch-<version>-setup.exe` | NSIS installer: Start menu entry, per-user install, uninstaller |
 | Windows | `LomeSearch-<version>-portable.exe` | Single file, no install, no registry writes |
+| macOS 11+ | `LomeSearch-<version>-mac-arm64.dmg`, `-mac-x64.dmg` | Drag to Applications; unsigned, so the first launch needs right-click → Open |
 | Debian/Ubuntu | `LomeSearch-<version>-linux-amd64.deb` | System install under `/opt/LomeSearch`, desktop entry, hicolor icons |
 | Any Linux | `LomeSearch-<version>-x86_64.AppImage` | Single executable, no install, works without FUSE 3 via `--appimage-extract-and-run` |
 | Android | `LomeSearch-<version>-android.apk` | Client for an engine on the same network; see `packages/android/README.md` |
@@ -23,6 +24,7 @@ npm run build            # engine (tsc) + browser (esbuild)
 
 npm run dist:linux       # deb + AppImage      -> dist/
 npm run dist:win         # setup + portable    -> dist/
+npm run dist:mac         # dmg + zip           -> dist/   (macOS host only)
 npm run dist:android     # apk                 -> dist/
 ```
 
@@ -60,6 +62,23 @@ unsigned executable: Windows SmartScreen will warn about an unknown publisher un
 the project ships a code-signing certificate. Add the certificate through
 `CSC_LINK` and `CSC_KEY_PASSWORD` and electron-builder signs automatically.
 
+### macOS
+
+`dmg` and `zip` targets build on a macOS host, either `macos-14` (arm64) or an
+Intel machine; CI runs one job per architecture so each bundle is native. The
+configuration sets `mac.identity: null` and `hardenedRuntime: false`, which means
+the app is unsigned and not notarised: macOS refuses the first launch until the
+user right-clicks the app, picks Open, or clears the quarantine flag:
+
+```bash
+xattr -dr com.apple.quarantine /Applications/LomeSearch.app
+```
+
+Signing and notarisation need an Apple Developer ID: set `CSC_LINK`,
+`CSC_KEY_PASSWORD`, `APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD` and
+`APPLE_TEAM_ID`, then drop `identity: null` (or keep it and let electron-builder
+pick the certificate from the keychain).
+
 ### Android
 
 `packages/android/build.sh` needs a JDK 17+ and an Android SDK with
@@ -83,6 +102,7 @@ Signing secrets, all optional:
 | Secret | Use |
 | --- | --- |
 | `CSC_LINK`, `CSC_KEY_PASSWORD` | Windows code signing (base64 or URL of the certificate) |
+| `APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD`, `APPLE_TEAM_ID` | macOS notarisation once a Developer ID exists |
 | `ANDROID_KEYSTORE_BASE64` | Base64 of the `.jks` used for release APKs |
 | `ANDROID_KEYSTORE_PASSWORD` | Password for that keystore |
 | `ANDROID_KEY_ALIAS` | Key alias, defaults to `lomesearch` |

@@ -49,12 +49,13 @@ release page:
 | --- | --- | --- |
 | Windows 10/11 x64 | `LomeSearch-<version>-setup.exe` | Installer, per-user, with uninstaller |
 | Windows 10/11 x64 | `LomeSearch-<version>-portable.exe` | Single file, nothing written to the registry |
+| macOS 11+ | `LomeSearch-<version>-mac-arm64.dmg` / `-mac-x64.dmg` | Apple Silicon or Intel; the first launch needs right-click → Open |
 | Debian, Ubuntu, Mint | `LomeSearch-<version>-linux-amd64.deb` | `sudo apt install ./LomeSearch-<version>-linux-amd64.deb` |
 | Any Linux x86_64 | `LomeSearch-<version>-x86_64.AppImage` | `chmod +x` and run; no install |
 | Android 7+ | `LomeSearch-<version>-android.apk` | Client for an engine on the same device or network |
 
-The Windows executables are unsigned, so SmartScreen shows an unknown-publisher
-warning until a signing certificate is configured. The Android client is a
+The Windows executables and the macOS bundles are unsigned, so SmartScreen and
+Gatekeeper warn about an unknown developer until a certificate is configured. The Android client is a
 WebView shell: the engine keeps running where the index lives, which is either a
 desktop on the same network or Termux on the phone itself. `docs/distribution.md`
 explains each artifact, the build commands, the signing keys and the CI workflow.
@@ -367,6 +368,7 @@ Packaging:
 ```bash
 npm run dist:linux    # .deb + .AppImage  -> dist/
 npm run dist:win      # setup + portable  -> dist/  (Wine on Linux, native on Windows)
+npm run dist:mac      # .dmg + .zip       -> dist/  (macOS host only)
 npm run dist:android  # .apk              -> dist/  (needs JDK + Android SDK)
 npm run test:android  # host-side tests for the Android client
 ```

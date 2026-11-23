@@ -28,7 +28,8 @@
     "dist:linux": "npm run build && cd packages/browser && npx electron-builder --linux deb AppImage --config.npmRebuild=false",
     "dist:win": "npm run build && cd packages/browser && npx electron-builder --win nsis portable --config.npmRebuild=false",
     "dist:android": "bash packages/android/build.sh",
-    "test:android": "bash packages/android/test.sh"
+    "test:android": "bash packages/android/test.sh",
+    "dist:mac": "npm run build && cd packages/browser && npx electron-builder --mac --config.npmRebuild=false"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",

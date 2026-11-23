@@ -28,6 +28,18 @@ electronLanguages:
 
 artifactName: ${productName}-${version}-${os}-${arch}.${ext}
 
+mac:
+  # No Apple Developer certificate is configured, so the bundle ships unsigned:
+  # Gatekeeper asks for a right-click > Open the first time.
+  identity: null
+  hardenedRuntime: false
+  gatekeeperAssess: false
+  category: public.app-category.productivity
+  icon: assets/icon-512.png
+  target:
+    - dmg
+    - zip
+
 linux:
   target:
     - target: deb
