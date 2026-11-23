@@ -86,6 +86,12 @@ test('buildSearchUrl honours the configured engine', () => {
   assert.equal(buildSearchUrl(withoutPlaceholder, status, 'x'), 'https://example.org/find?q=x');
 });
 
+test('google is a selectable default engine', () => {
+  const google = { ...settings, searchEngine: 'google' as const };
+  assert.equal(buildSearchUrl(google, status, 'a b'), 'https://www.google.com/search?q=a%20b');
+  assert.equal(engineName(google), 'Google');
+});
+
 test('searchSuggestions puts addresses before the search entry', () => {
   const urlFirst = searchSuggestions('example.com', settings, status);
   assert.equal(urlFirst[0]?.type, 'url');

@@ -53,6 +53,7 @@ export const SEARCH_ENGINES: Record<
   Exclude<SearchEngineId, 'local' | 'custom' | 'hybrid'>,
   { name: string; url: string }
 > = {
+  google: EXTERNAL_ENGINES.google,
   bing: EXTERNAL_ENGINES.bing,
   duckduckgo: EXTERNAL_ENGINES.duckduckgo,
   brave: EXTERNAL_ENGINES.brave,

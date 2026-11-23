@@ -13,6 +13,7 @@ const SETTINGS_KEY = 'lomesearch.web.settings';
 const HISTORY_KEY = 'lomesearch.web.history';
 
 const ENGINES = {
+  google: { name: 'Google', url: 'https://www.google.com/search?q=%s' },
   bing: { name: 'Bing', url: 'https://www.bing.com/search?q=%s' },
   duckduckgo: { name: 'DuckDuckGo', url: 'https://duckduckgo.com/?q=%s' },
   brave: { name: 'Brave Search', url: 'https://search.brave.com/search?q=%s' },

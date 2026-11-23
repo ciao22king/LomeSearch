@@ -6,7 +6,15 @@
 
 export type ThemeMode = 'system' | 'light' | 'dark';
 /** `hybrid` keeps local results and offers the fallback engine as a link. */
-export type SearchEngineId = 'local' | 'hybrid' | 'bing' | 'duckduckgo' | 'brave' | 'startpage' | 'custom';
+export type SearchEngineId =
+  | 'local'
+  | 'hybrid'
+  | 'google'
+  | 'bing'
+  | 'duckduckgo'
+  | 'brave'
+  | 'startpage'
+  | 'custom';
 /** Engines a query can be handed to when the local index is not enough. */
 export type ExternalEngineId = 'bing' | 'duckduckgo' | 'brave' | 'startpage' | 'mojeek' | 'google';
 export type StartupMode = 'newtab' | 'restore' | 'homepage';

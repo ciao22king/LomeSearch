@@ -39,6 +39,7 @@ main.append(
       [
         { value: 'local', label: 'LomeSearch (local index)' },
         { value: 'hybrid', label: 'LomeSearch, then an external engine' },
+        { value: 'google', label: 'Google' },
         { value: 'bing', label: 'Bing' },
         { value: 'duckduckgo', label: 'DuckDuckGo' },
         { value: 'brave', label: 'Brave Search' },
