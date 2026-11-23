@@ -1,0 +1,32 @@
+{
+  "name": "lomesearch",
+  "version": "1.0.0",
+  "private": true,
+  "description": "A privacy-first browser with its own local search engine",
+  "license": "Apache-2.0",
+  "type": "module",
+  "workspaces": [
+    "packages/engine",
+    "packages/browser"
+  ],
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "scripts": {
+    "build": "npm run build --workspace @lomesearch/engine && npm run build --workspace @lomesearch/browser",
+    "check": "npm run typecheck && npm run test",
+    "typecheck": "npm run typecheck --workspace @lomesearch/engine && npm run typecheck --workspace @lomesearch/browser",
+    "test": "npm run test --workspace @lomesearch/engine && npm run test --workspace @lomesearch/browser",
+    "engine": "npm run start --workspace @lomesearch/engine",
+    "browser": "npm run start --workspace @lomesearch/browser",
+    "bench": "npm run bench --workspace @lomesearch/engine",
+    "test:engine": "npm run test --workspace @lomesearch/engine",
+    "test:browser": "npm run test --workspace @lomesearch/browser",
+    "clean": "rm -rf packages/*/dist packages/*/dist-test packages/*/*.tsbuildinfo",
+    "cli": "node packages/engine/dist/src/cli.js"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "typescript": "^5.7.2"
+  }
+}

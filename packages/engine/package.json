@@ -1,0 +1,23 @@
+{
+  "name": "@lomesearch/engine",
+  "version": "1.0.0",
+  "description": "LomeSearch index engine, crawler and query server",
+  "license": "Apache-2.0",
+  "type": "module",
+  "main": "./dist/src/index.js",
+  "types": "./dist/src/index.d.ts",
+  "bin": {
+    "lomesearch": "./dist/src/cli.js"
+  },
+  "files": [
+    "dist",
+    "data"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "tsc -p tsconfig.json && node --test dist/test/*.test.js",
+    "start": "npm run build && node dist/src/cli.js serve",
+    "bench": "npm run build && node dist/src/bench.js"
+  }
+}

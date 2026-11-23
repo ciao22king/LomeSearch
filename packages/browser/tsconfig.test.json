@@ -1,0 +1,22 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "lib": ["ES2023", "DOM"],
+    "types": ["node"],
+    "noEmit": false,
+    "composite": false,
+    "declaration": false,
+    "sourceMap": false,
+    "outDir": "dist-test",
+    "rootDir": "."
+  },
+  "include": [
+    "src/main/store.ts",
+    "src/main/search.ts",
+    "src/main/privacy.ts",
+    "src/shared/**/*.ts",
+    "test/**/*.ts"
+  ]
+}

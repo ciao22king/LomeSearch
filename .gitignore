@@ -1,0 +1,10 @@
+node_modules/
+dist/
+dist-test/
+*.tsbuildinfo
+.DS_Store
+*.log
+.tmp/
+.engine-data/
+.user-data/
+.openhands/
