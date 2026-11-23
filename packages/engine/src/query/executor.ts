@@ -1,5 +1,4 @@
-import type { FieldLengths } from '../index/segment.js';
-import { FIELD, FIELD_COUNT, POSITIONED_FIELDS } from '../index/segment.js';
+import { FIELD, FIELD_COUNT, POSITIONED_FIELDS, type FieldLengths } from '../core/fields.js';
 import type { QueryNode } from './parser.js';
 import {
   DEFAULT_SCORING,

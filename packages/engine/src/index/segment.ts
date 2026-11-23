@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { ByteReader, ByteWriter } from '../core/bytes.js';
+import { FIELD, FIELD_COUNT, POSITIONED_FIELDS, type FieldLengths } from '../core/fields.js';
 
 /**
  * Immutable on-disk segment.
@@ -18,19 +19,8 @@ import { ByteReader, ByteWriter } from '../core/bytes.js';
  * applied at read time and during merges.
  */
 
-export const FIELD_COUNT = 5;
-/** Fields that keep token positions: title, headings, body, url. */
-export const POSITIONED_FIELDS = 4;
-
-export const FIELD = {
-  title: 0,
-  heading: 1,
-  body: 2,
-  url: 3,
-  meta: 4,
-} as const;
-
-export type FieldLengths = [number, number, number, number, number];
+export { FIELD, FIELD_COUNT, POSITIONED_FIELDS } from '../core/fields.js';
+export type { FieldLengths } from '../core/fields.js';
 
 const MAGIC = 'LOMESEG\u0001';
 const HEADER_FIXED = 8 + 4 * 5;

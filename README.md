@@ -24,6 +24,13 @@ privacy table and download links with checksums. It is plain HTML and CSS with n
 third-party requests, published by `.github/workflows/site.yml` once GitHub Pages
 is pointed at GitHub Actions for this repository.
 
+[`site/web/`](site/web/) is the browser itself, running inside the page: the
+engine is compiled to a 22 KiB ES module, the index is built in memory from a
+bundled corpus, and the window has tabs, an address bar, `lome:` pages and real
+results with highlighted snippets. It makes no request outside the site, which is
+why it also carries a strict `Content-Security-Policy`. See
+[`docs/web-edition.md`](docs/web-edition.md).
+
 The mascot in `site/assets/mascot/` is 18×18 pixel art traced to a 813-byte SVG
 (`mascotte.svg`) so it stays sharp at any size; `mascotte-source.png` is the
 original export. The same SVG is reused by the browser error page and by the
@@ -394,6 +401,7 @@ packages/engine/src/
   core/     tokenizer, Porter stemmer, HTML extraction, robots.txt, PSL, simhash
   crawl/    fetcher, frontier, sitemap reader, crawl service
   index/    segments, docstore, index writer/reader
+  memory/   the same analysis and ranking, postings held in RAM (web edition)
   query/    parser, BM25 scoring, snippets, suggester
   server/   HTTP server and HTML renderer
 packages/browser/src/
@@ -405,6 +413,8 @@ packages/android/   manifest, resources, MainActivity, gradle-free build.sh
 .github/workflows/dist.yml  deb, AppImage, exe and apk on their native runners
 .github/workflows/site.yml  static site to GitHub Pages
 site/       landing page, stylesheet, icons and screenshots
+site/web/   the browser and engine running in the page (engine.js is built)
+scripts/    demo corpus generator and the esbuild step for the web edition
 docs/       architecture, engine, browser, privacy and distribution notes
 ```
 

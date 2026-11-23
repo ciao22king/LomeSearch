@@ -1,5 +1,4 @@
-import type { FieldLengths } from '../index/segment.js';
-import { FIELD_COUNT } from '../index/segment.js';
+import { FIELD_COUNT, type FieldLengths } from '../core/fields.js';
 
 /**
  * BM25F scoring.

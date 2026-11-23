@@ -106,6 +106,11 @@ on-disk segments, a manifest with tombstones, BM25 over five fields, positional
 index for phrases, and a crawler that respects robots.txt, sitemaps and per-host
 delays.
 
+The query path (`query/`, `core/analysis.ts`, `core/fields.ts`) has no file
+system dependency, which is what lets `memory/index.ts` offer the same ranking
+without segments. That module is what the Pages demo runs; see
+[web-edition.md](web-edition.md).
+
 ## Invariants
 
 These are the rules the code relies on. Breaking one is a bug, not a refactor.

@@ -29,6 +29,8 @@
     "dist:win": "npm run build && cd packages/browser && npx electron-builder --win nsis portable --config.npmRebuild=false",
     "dist:android": "bash packages/android/build.sh",
     "test:android": "bash packages/android/test.sh",
+    "web": "node scripts/build-web.mjs",
+    "web:corpus": "node scripts/demo-corpus.mjs",
     "dist:mac": "npm run build && cd packages/browser && npx electron-builder --mac --config.npmRebuild=false"
   },
   "devDependencies": {

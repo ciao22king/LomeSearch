@@ -5,6 +5,10 @@ on:
     branches: [main]
     paths:
       - 'site/**'
+      - 'scripts/build-web.mjs'
+      - 'packages/engine/src/**'
+      - 'package.json'
+      - 'package-lock.json'
       - '.github/workflows/site.yml'
   workflow_dispatch:
 
@@ -26,13 +30,24 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # The web edition runs the engine inside the page: site/web/engine.js is a
+      # build product, so it is bundled here instead of being committed.
+      - name: Build the in-browser engine
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          node scripts/build-web.mjs
+
       - name: Check internal links and anchors
         run: |
           node - <<'NODE'
           const fs = require('node:fs');
           const path = require('node:path');
           const root = 'site';
-          const pages = ['index.html', '404.html'];
+          const pages = ['index.html', '404.html', 'web/index.html'];
           const ids = new Map();
           const files = new Map();
           for (const page of pages) {
@@ -40,21 +55,24 @@ jobs:
             files.set(page, html);
             ids.set(page, new Set([...html.matchAll(/id="([^"]+)"/g)].map((m) => m[1])));
           }
+          const resolveFrom = (page, href) => {
+            const base = href.startsWith('/') ? href.slice(1) : path.join(path.dirname(page), href);
+            return base.endsWith('/') ? path.join(base, 'index.html') : base;
+          };
           const problems = [];
           for (const [page, html] of files) {
             for (const [, href] of html.matchAll(/href="([^"]+)"/g)) {
               if (href.startsWith('#')) {
                 const id = href.slice(1);
                 if (id && !ids.get(page).has(id)) problems.push(`${page}: missing anchor ${href}`);
-              } else if (/^assets\/|^site\.webmanifest$|^\.\/$/.test(href)) {
-                const target = href === './' ? 'index.html' : href;
+              } else if (/^(assets\/|\.\.?\/|web\/|site\.webmanifest$|\.\/$)/.test(href) && !href.startsWith('#')) {
+                const target = resolveFrom(page, href.split('#')[0]);
                 if (!fs.existsSync(path.join(root, target))) problems.push(`${page}: missing file ${href}`);
               }
             }
-            for (const [, src] of html.matchAll(/src="([^"]+)"/g)) {
-              if (src.startsWith('assets/') && !fs.existsSync(path.join(root, src))) {
-                problems.push(`${page}: missing asset ${src}`);
-              }
+            for (const [, src] of html.matchAll(/(?:src|href)="([^"]+\.(?:js|css|svg|png|json))"/g)) {
+              const target = resolveFrom(page, src);
+              if (!fs.existsSync(path.join(root, target))) problems.push(`${page}: missing asset ${src}`);
             }
           }
           if (problems.length) {

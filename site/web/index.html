@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="it">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; base-uri 'none'; form-action 'none'"
+    />
+    <title>LomeSearch — edizione web</title>
+    <meta
+      name="description"
+      content="Il browser LomeSearch e il suo motore di ricerca, in esecuzione dentro la pagina: indice in memoria, nessuna richiesta fuori dal sito."
+    />
+    <link rel="icon" href="../assets/icons/icon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="./app.css" />
+  </head>
+  <body>
+    <a class="skip" href="#viewport">Salta al contenuto</a>
+
+    <div class="window" id="window">
+      <div class="titlebar">
+        <span class="lights" aria-hidden="true"><i></i><i></i><i></i></span>
+        <p class="titlebar__name">LomeSearch<span>edizione web</span></p>
+        <a class="titlebar__exit" href="../">
+          <svg aria-hidden="true"><use href="#i-back" /></svg>
+          Torna al sito
+        </a>
+      </div>
+
+      <div class="workspace">
+        <aside class="sidebar" aria-label="Schede">
+          <div class="sidebar__head">
+            <span>Schede</span>
+            <button type="button" id="new-tab" class="icon-btn" title="Nuova scheda (Ctrl+T)" aria-label="Nuova scheda">
+              <svg aria-hidden="true"><use href="#i-plus" /></svg>
+            </button>
+          </div>
+          <ol class="tabs" id="tabs"></ol>
+          <footer class="sidebar__foot">
+            <span id="index-status" class="status status--busy">
+              <span class="status__dot" aria-hidden="true"></span>
+              <span id="index-status-text">costruzione dell'indice…</span>
+            </span>
+          </footer>
+        </aside>
+
+        <section class="pane">
+          <div class="toolbar">
+            <div class="nav-buttons">
+              <button type="button" class="icon-btn" id="go-back" title="Indietro" aria-label="Indietro" disabled>
+                <svg aria-hidden="true"><use href="#i-back" /></svg>
+              </button>
+              <button type="button" class="icon-btn" id="go-forward" title="Avanti" aria-label="Avanti" disabled>
+                <svg aria-hidden="true"><use href="#i-forward" /></svg>
+              </button>
+              <button type="button" class="icon-btn" id="reload" title="Ricarica" aria-label="Ricarica">
+                <svg aria-hidden="true"><use href="#i-reload" /></svg>
+              </button>
+            </div>
+
+            <form class="omni" id="omni-form" role="search" autocomplete="off">
+              <span class="omni__shield" title="Nessun tracciamento">
+                <svg aria-hidden="true"><use href="#i-shield" /></svg>
+              </span>
+              <input
+                id="omni"
+                name="q"
+                type="text"
+                inputmode="search"
+                spellcheck="false"
+                aria-label="Cerca nell'indice locale o digita un indirizzo"
+                placeholder="Cerca nell'indice locale o digita un indirizzo"
+                aria-autocomplete="list"
+                aria-controls="suggestions"
+                aria-expanded="false"
+              />
+              <kbd aria-hidden="true">Ctrl L</kbd>
+              <ul class="suggestions" id="suggestions" role="listbox" hidden></ul>
+            </form>
+
+            <div class="toolbar__end">
+              <button type="button" class="icon-btn" id="theme-toggle" title="Tema" aria-label="Cambia tema">
+                <svg aria-hidden="true"><use href="#i-moon" /></svg>
+              </button>
+              <button type="button" class="icon-btn" id="open-settings" title="Impostazioni" aria-label="Impostazioni">
+                <svg aria-hidden="true"><use href="#i-gear" /></svg>
+              </button>
+            </div>
+          </div>
+
+          <main id="viewport" tabindex="-1">
+            <div class="boot">
+              <img class="boot__mascot" src="../assets/mascot/mascotte.svg" alt="" width="72" height="72" />
+              <p class="boot__title">Sto costruendo l'indice nel tuo browser</p>
+              <p class="boot__hint">137 documenti, analisi e postings in memoria. Nessun dato lascia la pagina.</p>
+              <div class="boot__bar" role="progressbar" aria-label="Avanzamento"><span></span></div>
+            </div>
+            <noscript>
+              <p class="panic">Questa pagina esegue il motore direttamente nel browser: serve JavaScript.</p>
+            </noscript>
+          </main>
+        </section>
+      </div>
+    </div>
+
+    <svg class="sprite" aria-hidden="true" focusable="false">
+      <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7" /></symbol>
+      <symbol id="i-forward" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" /></symbol>
+      <symbol id="i-reload" viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-2.3 6.3" /><path d="M20 5v6h-6" /></symbol>
+      <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l7 3v6c0 4.4-3 7.5-7 9-4-1.5-7-4.6-7-9V6z" /></symbol>
+      <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" /></symbol>
+      <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" /></symbol>
+      <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z" /></symbol>
+      <symbol id="i-gear" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="3" />
+        <path d="M12 3v2M12 19v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M3 12h2M19 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" />
+      </symbol>
+      <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" /><path d="M12 8v4.5l3 1.5" /></symbol>
+      <symbol id="i-globe" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="8" />
+        <path d="M4 12h16M12 4c2.5 2.6 2.5 13.4 0 16-2.5-2.6-2.5-13.4 0-16z" />
+      </symbol>
+      <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6" /><path d="M20 20l-4.5-4.5" /></symbol>
+      <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13" /></symbol>
+    </svg>
+
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>

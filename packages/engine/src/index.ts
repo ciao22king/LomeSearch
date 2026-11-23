@@ -1,4 +1,6 @@
 export { SearchIndex } from './index/index.js';
+export { MemoryIndex } from './memory/index.js';
+export type { MemoryDocument } from './memory/index.js';
 export type {
   IndexDocument,
   IndexOptions,

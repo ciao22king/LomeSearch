@@ -4,6 +4,14 @@ import { performance } from 'node:perf_hooks';
 import { canonicalizeUrl, hostOf } from '../core/url.js';
 import { ensureDir, readJsonFile, writeJsonAtomic } from '../core/fsutil.js';
 import { foldText, tokenize } from '../core/tokenizer.js';
+import {
+  analyzeText,
+  containsAnyTerm,
+  maxTermFrequency,
+  urlTokens,
+} from '../core/analysis.js';
+import { emptyLengths } from '../core/fields.js';
+import { matchesFilters } from '../query/filters.js';
 import { fingerprintToString, simhash } from '../core/simhash.js';
 import { getRegistrableDomain } from '../core/psl.js';
 import { DocStore, type StoredDocument } from './docstore.js';
@@ -139,14 +147,6 @@ const EMPTY_MANIFEST: Manifest = {
   tombstones: [],
   updatedAt: 0,
 };
-
-function emptyLengths(): FieldLengths {
-  return [0, 0, 0, 0, 0];
-}
-
-function urlTokens(url: string): string {
-  return url.replace(/[^\p{L}\p{N}]+/gu, ' ');
-}
 
 export class SearchIndex {
   readonly dir: string;
@@ -885,81 +885,6 @@ export class SearchIndex {
     if (this.dirty) this.commit();
     this.docStore.close();
   }
-}
-
-interface FieldAnalysis {
-  terms: string[];
-  positions: Map<string, number[]>;
-  surfaces: Map<string, Map<string, number>>;
-}
-
-function analyzeText(text: string): FieldAnalysis {
-  const tokens = tokenize(text);
-  const terms: string[] = [];
-  const positions = new Map<string, number[]>();
-  const surfaces = new Map<string, Map<string, number>>();
-  for (let i = 0; i < tokens.length; i++) {
-    const token = tokens[i]!;
-    terms.push(token.term);
-    const list = positions.get(token.term);
-    if (list) list.push(i);
-    else positions.set(token.term, [i]);
-    const surface = token.raw.toLowerCase();
-    if (surface !== token.term) {
-      let counts = surfaces.get(token.term);
-      if (!counts) {
-        counts = new Map();
-        surfaces.set(token.term, counts);
-      }
-      counts.set(surface, (counts.get(surface) ?? 0) + 1);
-    }
-  }
-  return { terms, positions, surfaces };
-}
-
-function matchesFilters(doc: StoredDocument, filters: QueryFilters): boolean {
-  if (filters.sites.length > 0) {
-    const site = doc.site;
-    const host = doc.host;
-    const ok = filters.sites.some(
-      (value) => site === value || host === value || host.endsWith(`.${value}`),
-    );
-    if (!ok) return false;
-  }
-  if (filters.hosts.length > 0 && !filters.hosts.includes(doc.host)) return false;
-  if (filters.filetypes.length > 0) {
-    const path = doc.url.split(/[?#]/)[0] ?? '';
-    const extension = path.includes('.') ? path.slice(path.lastIndexOf('.') + 1).toLowerCase() : '';
-    if (!filters.filetypes.includes(extension)) return false;
-  }
-  if (filters.langs.length > 0) {
-    const lang = doc.lang.toLowerCase();
-    if (!filters.langs.some((value) => lang.startsWith(value))) return false;
-  }
-  return true;
-}
-
-function containsAnyTerm(text: string, terms: string[]): boolean {
-  if (!text || terms.length === 0) return false;
-  const wanted = new Set(terms);
-  for (const token of tokenize(text)) {
-    if (wanted.has(token.term)) return true;
-  }
-  return false;
-}
-
-function maxTermFrequency(text: string, terms: string[]): number {
-  if (!text || terms.length === 0) return 0;
-  const wanted = new Set(terms);
-  const counts = new Map<string, number>();
-  let max = 0;
-  for (const token of tokenize(text)) {
-    if (!wanted.has(token.term)) continue;
-    const count = (counts.get(token.term) ?? 0) + 1;
-    counts.set(token.term, count);
-    if (count > max) max = count;
-  }
-  return max;
 }
 
 function memoryPostings(memory: Map<number, MemPosting>): TermPostings {
