@@ -2,7 +2,7 @@
   "name": "@lomesearch/browser",
   "version": "1.0.0",
   "private": true,
-  "description": "LomeSearch desktop browser",
+  "description": "Browser with its own crawler, index and BM25 engine, so queries never leave the machine",
   "license": "Apache-2.0",
   "type": "module",
   "main": "dist/main/main.js",
@@ -12,11 +12,20 @@
     "start": "npm run build && electron .",
     "start:engine": "node ../engine/dist/src/cli.js serve",
     "start:dev": "node build.mjs --dev && electron .",
-    "test": "tsc -p tsconfig.test.json && node --test dist-test/test/*.test.js"
+    "test": "tsc -p tsconfig.test.json && node --test dist-test/test/*.test.js",
+    "dist:linux": "electron-builder --linux deb AppImage",
+    "dist:win": "electron-builder --win nsis portable"
   },
   "devDependencies": {
     "@lomesearch/engine": "1.0.0",
-    "electron": "^33.2.1",
-    "esbuild": "^0.24.2"
-  }
+    "electron": "33.4.11",
+    "esbuild": "^0.24.2",
+    "electron-builder": "^25.1.8"
+  },
+  "productName": "LomeSearch",
+  "author": {
+    "name": "LomeSearch contributors",
+    "email": "ciao22king@users.noreply.github.com"
+  },
+  "homepage": "https://github.com/ciao22king/LomeSearch"
 }

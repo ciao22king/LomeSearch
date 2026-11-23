@@ -23,10 +23,16 @@
     "test:engine": "npm run test --workspace @lomesearch/engine",
     "test:browser": "npm run test --workspace @lomesearch/browser",
     "clean": "rm -rf packages/*/dist packages/*/dist-test packages/*/*.tsbuildinfo",
-    "cli": "node packages/engine/dist/src/cli.js"
+    "cli": "node packages/engine/dist/src/cli.js",
+    "dist": "npm run dist:linux && npm run dist:win",
+    "dist:linux": "npm run build && cd packages/browser && npx electron-builder --linux deb AppImage --config.npmRebuild=false",
+    "dist:win": "npm run build && cd packages/browser && npx electron-builder --win nsis portable --config.npmRebuild=false",
+    "dist:android": "bash packages/android/build.sh",
+    "test:android": "bash packages/android/test.sh"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",
-    "typescript": "^5.7.2"
+    "typescript": "^5.7.2",
+    "app-builder-bin": "5.0.0-alpha.10"
   }
 }

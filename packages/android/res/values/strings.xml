@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">LomeSearch</string>
+    <string name="back">Back</string>
+    <string name="forward">Forward</string>
+    <string name="reload">Reload</string>
+    <string name="home">Home</string>
+    <string name="menu">Menu</string>
+    <string name="address_hint">Search the index or enter an address</string>
+    <string name="go">Go</string>
+    <string name="menu_engine">Engine address</string>
+    <string name="menu_privacy">Privacy</string>
+    <string name="menu_about">About</string>
+</resources>

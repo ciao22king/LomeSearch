@@ -1,0 +1,88 @@
+appId: org.lomesearch.browser
+productName: LomeSearch
+copyright: Copyright © 2026 LomeSearch contributors
+
+directories:
+  output: ../../dist
+  buildResources: assets
+
+files:
+  - dist/**/*
+  - package.json
+
+extraResources:
+  - from: ../engine/dist
+    to: engine/dist
+    filter:
+      - "**/*"
+      - "!test/**"
+      - "!**/*.map"
+  - from: ../engine/package.json
+    to: engine/package.json
+
+asar: true
+compression: maximum
+electronLanguages:
+  - en-US
+  - it
+
+artifactName: ${productName}-${version}-${os}-${arch}.${ext}
+
+linux:
+  target:
+    - target: deb
+      arch: [x64]
+    - target: AppImage
+      arch: [x64]
+  category: Network;WebBrowser
+  icon: assets/icons
+  executableName: lomesearch
+  maintainer: LomeSearch contributors <ciao22king@users.noreply.github.com>
+  synopsis: Privacy-first browser with a local search engine
+  desktop:
+    Name: LomeSearch
+    GenericName: Web Browser
+    Comment: Browse and search without leaving your machine
+    Categories: Network;WebBrowser;Privacy;
+    Keywords: search;browser;privacy;indexnow;engine;
+    StartupWMClass: LomeSearch
+    MimeType: x-scheme-handler/http;x-scheme-handler/https;text/html;
+
+deb:
+  packageCategory: web
+  description: Browser with its own crawler, index and BM25 engine, so queries never leave the machine
+  depends:
+    - libgtk-3-0
+    - libnotify4
+    - libnss3
+    - libxss1
+    - libxtst6
+    - libatspi2.0-0
+    - libuuid1
+    - libsecret-1-0
+    - xdg-utils
+
+appImage:
+  artifactName: ${productName}-${version}-${arch}.AppImage
+
+win:
+  target:
+    - target: nsis
+      arch: [x64]
+    - target: portable
+      arch: [x64]
+  icon: assets/icon.ico
+  executableName: LomeSearch
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowElevation: true
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: LomeSearch
+  artifactName: ${productName}-${version}-setup.${ext}
+
+portable:
+  artifactName: ${productName}-${version}-portable.${ext}

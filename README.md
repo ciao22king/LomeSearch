@@ -11,6 +11,7 @@ The repository is an Apache-2.0 TypeScript monorepo with two packages:
 | --- | --- | --- |
 | `packages/engine` | `@lomesearch/engine` | Crawler, inverted index, BM25 query engine, HTTP query server, IndexNow support |
 | `packages/browser` | `@lomesearch/browser` | Electron browser: tabs, omnibox, internal pages, extensions, downloads, privacy controls |
+| `packages/android` | `org.lomesearch.android` | Android client: WebView shell that talks to a LomeSearch engine |
 
 Both are written from scratch with no runtime dependencies beyond Node.js and
 Electron. The engine is a plain Node HTTP server; the browser talks to it over
@@ -33,9 +34,30 @@ engine and rebuilds the parts around it:
 
 ## Requirements
 
-- Node.js 22 or newer, npm 10 or newer
+- Node.js 22 or newer, npm 10 or newer (only to build from source; the
+  installers in the next section need none of this)
 - Linux, macOS or Windows for the browser (Electron 33)
 - A display for the browser; headless Linux needs Xvfb
+
+## Install
+
+Prebuilt builds carry their own copy of the engine, so they need no Node.js, npm
+or compiler on the target machine. Grab the file for your platform from the
+release page:
+
+| Platform | File | Notes |
+| --- | --- | --- |
+| Windows 10/11 x64 | `LomeSearch-<version>-setup.exe` | Installer, per-user, with uninstaller |
+| Windows 10/11 x64 | `LomeSearch-<version>-portable.exe` | Single file, nothing written to the registry |
+| Debian, Ubuntu, Mint | `LomeSearch-<version>-linux-amd64.deb` | `sudo apt install ./LomeSearch-<version>-linux-amd64.deb` |
+| Any Linux x86_64 | `LomeSearch-<version>-x86_64.AppImage` | `chmod +x` and run; no install |
+| Android 7+ | `LomeSearch-<version>-android.apk` | Client for an engine on the same device or network |
+
+The Windows executables are unsigned, so SmartScreen shows an unknown-publisher
+warning until a signing certificate is configured. The Android client is a
+WebView shell: the engine keeps running where the index lives, which is either a
+desktop on the same network or Termux on the phone itself. `docs/distribution.md`
+explains each artifact, the build commands, the signing keys and the CI workflow.
 
 ## Quick start
 
@@ -326,7 +348,9 @@ packages/browser/src/
   preload/  chrome and page bridges
   renderer/ chrome UI and internal pages
   shared/   types and constants shared by every process
-docs/       architecture, engine, browser and privacy notes
+packages/android/   manifest, resources, MainActivity, gradle-free build.sh
+.github/workflows/dist.yml  deb, AppImage, exe and apk on their native runners
+docs/       architecture, engine, browser, privacy and distribution notes
 ```
 
 ## Development
@@ -337,6 +361,17 @@ npm test             # engine + browser suites
 npm run bench        # engine micro-benchmarks
 npm run clean
 ```
+
+Packaging:
+
+```bash
+npm run dist:linux    # .deb + .AppImage  -> dist/
+npm run dist:win      # setup + portable  -> dist/  (Wine on Linux, native on Windows)
+npm run dist:android  # .apk              -> dist/  (needs JDK + Android SDK)
+npm run test:android  # host-side tests for the Android client
+```
+
+See `docs/distribution.md` for requirements, signing and verification.
 
 The browser build uses esbuild for the main process, preload scripts and renderer
 bundles; the engine uses `tsc`. The browser test suite compiles a subset of the
