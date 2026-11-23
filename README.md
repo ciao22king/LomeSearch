@@ -5,7 +5,7 @@ LomeSearch is a desktop browser and a search engine that run on your machine. Th
 browser uses its own local index by default, so a search query never leaves the
 computer. Nothing here needs an account, a cloud service or a telemetry endpoint.
 
-The repository is an Apache-2.0 TypeScript monorepo with two packages:
+The repository is an Apache-2.0 TypeScript monorepo with three packages:
 
 | Package | Name | What it is |
 | --- | --- | --- |
