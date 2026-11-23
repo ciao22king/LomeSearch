@@ -9,3 +9,4 @@ dist-test/
 .user-data/
 .openhands/
 packages/android/build/
+packages/android/.keystore/

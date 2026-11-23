@@ -67,8 +67,10 @@ the project ships a code-signing certificate. Add the certificate through
 `zipalign` and `apksigner` directly — no Gradle, no dependency downloads.
 
 Signing uses `LOMESEARCH_KEYSTORE` and `LOMESEARCH_KEYSTORE_PASSWORD` when set;
-otherwise a local keystore is created once under `packages/android/build/keystore/`
-so that rebuilds update in place instead of failing with a signature mismatch.
+otherwise a local keystore is created once under
+`packages/android/.keystore/lomesearch.jks` (git-ignored, outside `build/`, so the
+build wipe does not delete it) and every rebuild signs with the same key. Losing
+that file means future APKs cannot be installed over older ones.
 
 ## Continuous integration
 

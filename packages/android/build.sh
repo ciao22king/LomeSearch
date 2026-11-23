@@ -7,8 +7,9 @@
 #
 # Signing: LOMESEARCH_KEYSTORE (+ LOMESEARCH_KEYSTORE_PASSWORD, alias
 # LOMESEARCH_KEY_ALIAS, default "lomesearch") produces a release-signed APK.
-# Without it the script creates build/keystore/lomesearch.jks on first use, so
-# repeated local builds keep the same signature.
+# Without it the script creates .keystore/lomesearch.jks on first use, so
+# repeated local builds keep the same signature (and later builds can be
+# installed over earlier ones).
 set -euo pipefail
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -63,7 +64,7 @@ echo "package"
 (cd "$out/dex" && zip -q -j "$out/app-unsigned.apk" classes.dex)
 "$build_tools/zipalign" -f -p 4 "$out/app-unsigned.apk" "$out/app-aligned.apk"
 
-keystore="${LOMESEARCH_KEYSTORE:-$out/keystore/lomesearch.jks}"
+keystore="${LOMESEARCH_KEYSTORE:-$here/.keystore/lomesearch.jks}"
 if [[ ! -f "$keystore" ]]; then
   mkdir -p "$(dirname "$keystore")"
   keytool -genkeypair -keystore "$keystore" -storepass "${LOMESEARCH_KEYSTORE_PASSWORD:-lomesearch}" \

@@ -68,9 +68,10 @@ ANDROID_HOME=/path/to/android-sdk bash packages/android/build.sh
 
 Signing: set `LOMESEARCH_KEYSTORE`, `LOMESEARCH_KEYSTORE_PASSWORD` and optionally
 `LOMESEARCH_KEY_ALIAS` to sign with a stable key. Without them the script creates
-`build/keystore/lomesearch.jks` on first use, so consecutive local builds keep the
-same signature. Keep that file if you want to ship updates that install over the
-previous version.
+`.keystore/lomesearch.jks` on first use, so consecutive local builds keep the same
+signature. Keep that file if you want to ship updates that install over the
+previous version; it is git-ignored and lives outside `build/`, which the script
+wipes on every run.
 
 `bash packages/android/test.sh` runs the JVM-only part of the client (address
 classification and query encoding) on the host.
