@@ -32,6 +32,8 @@ export interface SearchServerOptions {
   rateLimits?: { searchPerMinute?: number; indexNowPerMinute?: number };
   /** Set when the server sits behind a reverse proxy you control. */
   trustProxy?: boolean;
+  /** Extra Host header names to accept, beyond loopback and the bind address. */
+  allowedHosts?: string[];
 }
 
 export interface SearchServerHandle {
@@ -105,6 +107,11 @@ export async function startSearchServer(options: SearchServerOptions): Promise<S
   async function handle(request: IncomingMessage, response: ServerResponse): Promise<void> {
     const started = performance.now();
     setSecurityHeaders(response);
+    const allowedHosts = [...(options.allowedHosts ?? []), engineHost];
+    if (!isAllowedHost(request.headers.host, bindAddress, allowedHosts)) {
+      sendJson(response, 421, { error: 'host non consentito' });
+      return;
+    }
     const url = new URL(request.url ?? '/', `http://${request.headers.host ?? 'localhost'}`);
     const route = routeName(url.pathname);
     response.on('finish', () => {
@@ -113,7 +120,7 @@ export async function startSearchServer(options: SearchServerOptions): Promise<S
     });
 
     if (request.method === 'OPTIONS') {
-      response.writeHead(204, corsHeaders());
+      response.writeHead(204, { allow: 'GET, POST, OPTIONS' });
       response.end();
       return;
     }
@@ -180,12 +187,12 @@ export async function startSearchServer(options: SearchServerOptions): Promise<S
     if (url.pathname === '/suggest' && request.method === 'GET') {
       const clientKey = clientKeys.keyFor(clientAddress(request, options.trustProxy));
       if (!searchLimiter.take(clientKey)) {
-        sendJson(response, 429, { error: 'rate limited' }, corsHeaders());
+        sendJson(response, 429, { error: 'rate limited' });
         return;
       }
       const query = url.searchParams.get('q') ?? '';
       const suggestions = index.suggest(query, 8);
-      sendJson(response, 200, [query, suggestions], corsHeaders());
+      sendJson(response, 200, [query, suggestions]);
       return;
     }
 
@@ -217,7 +224,7 @@ export async function startSearchServer(options: SearchServerOptions): Promise<S
 
       if (!query.trim()) {
         if (wantsJson) {
-          sendJson(response, 200, { query: '', results: [], total: 0, tookMs: 0 }, corsHeaders());
+          sendJson(response, 200, { query: '', results: [], total: 0, tookMs: 0 });
         } else {
           sendHtml(response, 200, renderSearchPage(renderContext, '', null, 1));
         }
@@ -229,7 +236,7 @@ export async function startSearchServer(options: SearchServerOptions): Promise<S
         offset: (page - 1) * RESULT_PAGE_SIZE,
       });
       if (wantsJson) {
-        sendJson(response, 200, { ...result, page }, corsHeaders());
+        sendJson(response, 200, { ...result, page });
       } else {
         sendHtml(response, 200, renderSearchPage(renderContext, query, result, page));
       }
@@ -343,12 +350,25 @@ function setSecurityHeaders(response: ServerResponse): void {
   response.setHeader('cache-control', 'no-store');
 }
 
-function corsHeaders(): Record<string, string> {
-  return {
-    'access-control-allow-origin': '*',
-    'access-control-allow-methods': 'GET, POST, OPTIONS',
-    'access-control-allow-headers': 'content-type',
-  };
+/**
+ * Rejects DNS-rebinding requests: a page on attacker.example that resolves to
+ * 127.0.0.1 still sends its own Host header. Only loopback names, the address
+ * the server bound to and explicitly allowed names are accepted.
+ */
+export function isAllowedHost(
+  hostHeader: string | undefined,
+  bindAddress: string,
+  allowedHosts: string[] = [],
+): boolean {
+  if (!hostHeader) return false;
+  const host = hostnameOf(hostHeader);
+  if (host === '127.0.0.1' || host === 'localhost' || host === '::1') return true;
+  if (host === hostnameOf(bindAddress)) return true;
+  return allowedHosts.some((item) => hostnameOf(item) === host);
+}
+
+function hostnameOf(value: string): string {
+  return value.replace(/:\d+$/, '').replace(/^\[|\]$/g, '').toLowerCase();
 }
 
 function sendJson(

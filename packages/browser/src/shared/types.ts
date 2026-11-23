@@ -8,6 +8,9 @@ export type ThemeMode = 'system' | 'light' | 'dark';
 export type SearchEngineId = 'local' | 'duckduckgo' | 'brave' | 'startpage' | 'custom';
 export type StartupMode = 'newtab' | 'restore' | 'homepage';
 
+export type WebRtcPolicy = 'disable' | 'public-interface' | 'default';
+export type ReferrerPolicySetting = 'strict' | 'origin' | 'none';
+
 export interface PrivacySettings {
   blockTrackers: boolean;
   blockThirdPartyCookies: boolean;
@@ -15,6 +18,10 @@ export interface PrivacySettings {
   sendDoNotTrack: boolean;
   fingerprintProtection: boolean;
   dnsOverHttps: boolean;
+  webrtcPolicy: WebRtcPolicy;
+  referrerPolicy: ReferrerPolicySetting;
+  spoofTimezone: boolean;
+  spellchecker: boolean;
   clearOnExit: boolean;
   remoteBlocklist: string;
 }

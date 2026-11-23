@@ -1,5 +1,5 @@
 import type { Session } from 'electron';
-import type { ClearDataOptions, PrivacySummary } from '../shared/types.js';
+import type { ClearDataOptions, PrivacySummary, ReferrerPolicySetting } from '../shared/types.js';
 import type { AppStore } from './store.js';
 
 /**
@@ -201,6 +201,47 @@ const MULTI_LABEL_SUFFIXES = new Set<string>([
   'tumblr.com', 'medium.com', 'substack.com', 'notion.site', 'readthedocs.io',
 ]);
 
+/**
+ * Rewrites the Referer header before a request leaves the browser.
+ *
+ * `strict` mirrors strict-origin-when-cross-origin but enforces it even when a
+ * page asks for something looser: same-origin keeps the path, everything else
+ * is cut to the origin, and HTTPS to HTTP drops the header entirely.
+ * `origin` cuts every URL to its origin. `none` removes the header.
+ */
+export function reduceReferrer(
+  headers: Record<string, string | string[]>,
+  target: URL,
+  firstParty: URL | null,
+  policy: ReferrerPolicySetting,
+): void {
+  const key = Object.keys(headers).find((name) => name.toLowerCase() === 'referer');
+  if (!key) return;
+  const raw = headers[key];
+  const value = Array.isArray(raw) ? raw[0] : raw;
+  if (!value || policy === 'none' || !firstParty) {
+    delete headers[key];
+    return;
+  }
+  let referrer: URL;
+  try {
+    referrer = new URL(value);
+  } catch {
+    delete headers[key];
+    return;
+  }
+  if (referrer.protocol === 'https:' && target.protocol === 'http:') {
+    delete headers[key];
+    return;
+  }
+  const sameOrigin = referrer.protocol === target.protocol && referrer.host === target.host;
+  if (sameOrigin && policy === 'strict') {
+    headers[key] = value;
+    return;
+  }
+  headers[key] = `${referrer.protocol}//${referrer.host}/`;
+}
+
 export interface PrivacyContext {
   /** URL of the top-level document, used to decide what is third-party. */
   tabUrl(webContentsId: number): string | undefined;
@@ -297,9 +338,12 @@ export class PrivacyManager {
           if (/^sec-ch-ua/i.test(name) || name.toLowerCase() === 'x-client-data') delete headers[name];
         }
       }
+      const url = safeUrl(details.url);
+      const firstParty = this.firstPartyFor(details, context);
+      if (url) {
+        reduceReferrer(headers, url, firstParty, settings.referrerPolicy ?? 'strict');
+      }
       if (settings.blockThirdPartyCookies) {
-        const url = safeUrl(details.url);
-        const firstParty = this.firstPartyFor(details, context);
         if (url && firstParty && registrableDomain(url.hostname) !== registrableDomain(firstParty.hostname)) {
           for (const name of Object.keys(headers)) {
             if (name.toLowerCase() === 'cookie') delete headers[name];

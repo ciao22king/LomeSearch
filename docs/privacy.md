@@ -15,6 +15,12 @@ This document describes what is protected, what is not, and where data lives.
 - Cross-site cookies and storage.
 - Silent permission grants (camera, microphone, location, notifications).
 - Cleartext HTTP for top-level navigation.
+- WebRTC IP leaks: ICE candidates cannot carry a local or public address.
+- Referer paths and query strings leaking to other origins.
+- Timezone as an identifier: the browser runs in UTC.
+- Background traffic: component updates, autofill uploads, crash reports,
+  translation, optimization hints and the spellchecker dictionary download are
+  all disabled.
 - Telemetry, accounts, sync and remote logging: none exist in the codebase.
 - Blocked-request profiling: counters are aggregated per domain, not per URL.
 
@@ -26,8 +32,12 @@ This document describes what is protected, what is not, and where data lives.
   not something LomeSearch adds.
 - Local disk access: settings, history and bookmarks are plain JSON, not
   encrypted. Anyone who can read your home directory can read them.
-- Fingerprinting in general: client hints are reduced and `DNT`/`GPC` are sent,
-  but canvas, WebGL, fonts and timing are still observable.
+- Fingerprinting in general: canvas, WebGL, audio, hardware counts, screen depth
+  and device enumeration are noised, but installed fonts, `Intl` locale and
+  timing are still observable.
+- Network-level leaks below the browser: a VPN or proxy that does not cover IPv6
+  can still expose an IPv6 address for ordinary HTTP(S) traffic. WebRTC is
+  covered by LomeSearch; the rest is the operating system's job.
 - Extensions: an installed extension can read and modify pages, as in Chrome.
 - Remote search engines: if you pick one, your query goes there.
 
@@ -86,7 +96,60 @@ Private windows use an in-memory session with its own storage partition:
 - cookies and storage are discarded when the last private window closes;
 - the window is not saved in the session restore file.
 
-### 6. DNS over HTTPS
+### 6. WebRTC
+
+Two layers, because the Chromium switch alone is not enough on Electron 33,
+where a STUN request still produced a `srflx` candidate with the public IP:
+
+- `--force-webrtc-ip-handling-policy=disable_non_proxied_udp` is passed at
+  startup for builds that honour it.
+- `RTCPeerConnection` is patched in every page before any script runs. With the
+  default `disable` policy, `iceServers` is emptied and `iceTransportPolicy` is
+  set to `relay`, so no candidate leaves the machine. With `public-interface`,
+  STUN is removed and only mDNS host candidates remain (they contain a `.local`
+  name, never an IP address). `default` restores Chromium behaviour.
+
+Verified with a probe page that gathered ICE candidates: `disable` produced zero
+candidates, `public-interface` produced one mDNS host candidate and no `srflx`.
+
+### 7. Referer
+
+Every request passes through `onBeforeSendHeaders`, which rewrites the header:
+
+- `strict` (default): same-origin keeps the full URL, everything else is cut to
+  the origin, and HTTPS to HTTP drops the header.
+- `origin`: always the origin only.
+- `none`: header removed.
+
+This is enforced even when a page sets a looser `Referrer-Policy`.
+
+### 8. Timezone
+
+With `privacy.spoofTimezone` on (default), `TZ=UTC` is set before Chromium
+starts, so `Intl.DateTimeFormat`, `Date` and the rendered clock all agree on UTC
+instead of exposing the local zone. The setting needs a restart.
+
+### 9. Background traffic and spellchecker
+
+At startup the browser passes `--disable-background-networking`,
+`--disable-component-update`, `--disable-domain-reliability`, `--disable-breakpad`,
+`--no-pings`, `--no-first-run`, `--no-default-browser-check` and disables the
+features `AutofillServerCommunication`, `CertificateTransparencyComponentUpdater`,
+`InterestFeedContentSuggestions`, `MediaRouter`, `NetworkTimeServiceQuerying`,
+`OptimizationHints`, `SegmentationPlatform` and `Translate`.
+
+Electron downloads Hunspell dictionaries from a Google CDN the first time the
+spellchecker runs, so `privacy.spellchecker` defaults to `false`. Turn it on if
+you want it; the download is then the only request it makes.
+
+### 10. Storage partitioning
+
+Chromium 130 partitions HTTP cache, localStorage, IndexedDB and service workers
+by top-level site; LomeSearch enables `ThirdPartyStoragePartitioning` explicitly.
+On top of that, third-party cookies and `Set-Cookie` headers are stripped, so a
+tracker cannot use a shared cookie jar to recognise a visit.
+
+### 11. DNS over HTTPS
 
 When `privacy.dnsOverHttps` is on (default), Chromium resolves names through
 `https://cloudflare-dns.com/dns-query`. This hides DNS queries from your ISP and
@@ -128,11 +191,33 @@ directory.
 | Configured remote engine | Only if you choose one | Query text |
 | The site you visit | Always | Normal browsing traffic |
 | Cloudflare DoH | DNS resolution, if enabled | Hostnames |
+| Google CDN | Only if the spellchecker is enabled | Dictionary request |
 | Remote blocklist URL | Only if configured | Nothing; the list is downloaded |
 | IndexNow participants | Only when you run `indexnow submit` | URLs you submit |
 
 There is no other outbound traffic. The browser does not contact update servers,
-crash reporters or analytics endpoints.
+crash reporters or analytics endpoints, and the switch list above is applied
+before Chromium starts, so background services never get a chance to run.
+
+The local engine binds `127.0.0.1`, accepts only loopback `Host` headers (so DNS
+rebinding fails with `421`), sends no CORS headers (so a page cannot read the
+index) and logs only method, route, status and duration: the query string is
+never written to disk or to the log.
+
+## Leak checklist
+
+| # | Vector | Status |
+| --- | --- | --- |
+| 1 | WebRTC IP leak | Closed. Switch plus page guard; zero candidates in `disable`. |
+| 2 | DNS leak | Closed while DoH is on; DNS goes to Cloudflare, not the ISP. Turning DoH off uses the system resolver. |
+| 3 | IPv6 leak | WebRTC is covered. Ordinary IPv6 traffic still follows the routing table; use a VPN that carries IPv6. |
+| 4 | Engine telemetry | Closed. Background networking, component updates, crash reports, autofill upload, translate, optimization hints and the spellchecker download are disabled. |
+| 5 | Canvas, WebGL, audio | Noised per site and per session, including `toDataURL`/`toBlob`, `getImageData`, `readPixels`-adjacent parameters, WebGL vendor/renderer and `AudioBuffer` reads. |
+| 6 | Fonts and hardware | `hardwareConcurrency`, `deviceMemory`, plugins, screen depth and media devices are spoofed. Installed fonts remain observable. |
+| 7 | Cache and storage leaks | Third-party cookies stripped; storage partitioning enabled; private windows use a memory-only session. |
+| 8 | Referer leak | Closed. Origin-only cross-site by default, downgrades dropped, policy configurable. |
+| 9 | Timezone, locale | Timezone is UTC. `navigator.languages` and `Intl` locale are left real to keep pages usable. |
+| 10 | Query metadata | Queries stay on loopback, are never logged, and the engine refuses foreign `Host` headers and cross-origin reads. |
 
 ## Reporting a problem
 

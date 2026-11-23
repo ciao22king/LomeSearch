@@ -1,4 +1,4 @@
-import type { SearchEngineId, Settings } from './types.js';
+import type { PrivacySettings, SearchEngineId, Settings } from './types.js';
 
 export const INTERNAL_SCHEME = 'lomesearch';
 
@@ -39,6 +39,21 @@ export const SEARCH_ENGINES: Record<Exclude<SearchEngineId, 'local' | 'custom'>,
   startpage: { name: 'Startpage', url: 'https://www.startpage.com/sp/search?query=%s' },
 };
 
+export const DEFAULT_PRIVACY: PrivacySettings = {
+  blockTrackers: true,
+  blockThirdPartyCookies: true,
+  httpsFirst: true,
+  sendDoNotTrack: true,
+  fingerprintProtection: true,
+  dnsOverHttps: true,
+  webrtcPolicy: 'disable',
+  referrerPolicy: 'strict',
+  spoofTimezone: true,
+  spellchecker: false,
+  clearOnExit: false,
+  remoteBlocklist: '',
+};
+
 export function defaultSettings(paths: { dataDir: string; downloadDir: string }): Settings {
   return {
     version: 1,
@@ -48,16 +63,7 @@ export function defaultSettings(paths: { dataDir: string; downloadDir: string })
     startup: 'newtab',
     theme: 'system',
     language: 'it',
-    privacy: {
-      blockTrackers: true,
-      blockThirdPartyCookies: true,
-      httpsFirst: true,
-      sendDoNotTrack: true,
-      fingerprintProtection: true,
-      dnsOverHttps: true,
-      clearOnExit: false,
-      remoteBlocklist: '',
-    },
+    privacy: { ...DEFAULT_PRIVACY },
     engine: {
       autoStart: true,
       port: 7717,

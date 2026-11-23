@@ -141,15 +141,55 @@ main.append(
     ),
     toggleRow(
       'Protezione dal fingerprinting',
-      'Rumore deterministico su canvas, WebGL, audio e dispositivi multimediali.',
+      'Rumore deterministico su canvas, WebGL, audio, dispositivi e hardware.',
       privacy.fingerprintProtection,
       (value) => patch({ privacy: { ...current.privacy, fingerprintProtection: value } }),
+    ),
+    selectRow(
+      'WebRTC',
+      'Blocca le connessioni UDP dirette: senza proxy non espone IP locali o reali. Richiede il riavvio.',
+      [
+        { value: 'disable', label: 'Blocca (consigliato)' },
+        { value: 'public-interface', label: 'Solo interfaccia pubblica' },
+        { value: 'default', label: 'Comportamento Chromium' },
+      ],
+      privacy.webrtcPolicy,
+      (value) =>
+        patch({
+          privacy: { ...current.privacy, webrtcPolicy: value as Settings['privacy']['webrtcPolicy'] },
+        }),
+    ),
+    selectRow(
+      'Referer',
+      'Quanto dell’URL precedente viene inviato al sito di destinazione.',
+      [
+        { value: 'strict', label: 'Solo origine tra siti diversi (consigliato)' },
+        { value: 'origin', label: 'Sempre solo origine' },
+        { value: 'none', label: 'Mai' },
+      ],
+      privacy.referrerPolicy,
+      (value) =>
+        patch({
+          privacy: { ...current.privacy, referrerPolicy: value as Settings['privacy']['referrerPolicy'] },
+        }),
+    ),
+    toggleRow(
+      'Fuso orario UTC',
+      'Espone UTC invece del fuso locale, che è un identificatore. Richiede il riavvio.',
+      privacy.spoofTimezone,
+      (value) => patch({ privacy: { ...current.privacy, spoofTimezone: value } }),
     ),
     toggleRow(
       'DNS over HTTPS',
       'Cloudflare DoH. Richiede il riavvio del browser.',
       privacy.dnsOverHttps,
       (value) => patch({ privacy: { ...current.privacy, dnsOverHttps: value } }),
+    ),
+    toggleRow(
+      'Correttore ortografico',
+      'Electron scarica i dizionari da un CDN di Google: spento per impostazione predefinita.',
+      privacy.spellchecker,
+      (value) => patch({ privacy: { ...current.privacy, spellchecker: value } }),
     ),
     toggleRow(
       'Cancella i dati alla chiusura',

@@ -91,8 +91,16 @@ running, the suggestion falls back to the configured remote engine and says so.
   protection is on.
 - **HTTPS-first** — top-level `http://` navigations are upgraded to `https://`
   once per host; if TLS fails, the host is remembered and plain HTTP is allowed.
+- **Referer** — `reduceReferrer` cuts cross-site referrers to their origin,
+  drops HTTPS to HTTP downgrades and can remove the header entirely.
 - **Counters** — blocked requests are counted per tab and aggregated per
   registrable domain in `privacy.json`. No per-URL log is kept.
+
+Outside `webRequest`, the main process applies startup switches for WebRTC
+(`force-webrtc-ip-handling-policy`), DoH, background networking and the
+spellchecker, and the tab preload patches `RTCPeerConnection` so no ICE candidate
+can carry a local or public address. `TZ=UTC` is set before Chromium starts when
+timezone spoofing is on. The privacy page shows the live state of each layer.
 
 See [privacy.md](privacy.md) for the threat model.
 
@@ -173,4 +181,5 @@ HTML and CSS are copied as-is. `npm run build` in the package runs the bundler;
 to `dist-test/` with `tsc` and runs them with `node --test`. The tests cover
 settings merging, history ordering and retention, bookmarks, downloads,
 permissions, privacy counters, URL resolution, search URL construction,
-suggestion ranking, internal URL display and the blocklist matcher.
+suggestion ranking, internal URL display, the blocklist matcher, referrer
+reduction, the startup switch list and the injected page guards.

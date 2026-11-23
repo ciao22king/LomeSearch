@@ -25,6 +25,9 @@ engine and rebuilds the parts around it:
 - the query path is a few hundred lines of BM25 over immutable segments;
 - the privacy layers are visible: every blocked request is counted and listed by
   domain, with no per-URL log;
+- network leaks are closed in code, not just in a settings page: WebRTC cannot
+  gather a local or public candidate, referrers are cut to the origin, the clock
+  runs in UTC and Chromium's background services are switched off before start;
 - sites can push changes with IndexNow instead of waiting for a crawl.
 
 ## Requirements
@@ -39,7 +42,7 @@ engine and rebuilds the parts around it:
 npm install
 npm run build        # engine (tsc) + browser (esbuild bundles)
 npm run browser      # build again if needed, then launch Electron
-npm test             # 47 engine tests + 26 browser tests
+npm test             # 49 engine tests + 42 browser tests
 ```
 
 The browser starts its own engine on `127.0.0.1:7717` and opens a new tab. The

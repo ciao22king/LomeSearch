@@ -138,12 +138,16 @@ skipped, errors, and elapsed time.
 
 The server binds `127.0.0.1` by default. Every response carries
 `x-content-type-options`, `x-frame-options: DENY` and `referrer-policy:
-no-referrer`; HTML pages also get a strict CSP.
+no-referrer`; HTML pages also get a strict CSP. There are no CORS headers, so a
+web page cannot read the index, and requests whose `Host` header is not loopback,
+the bind address or an explicitly allowed name are rejected with `421` to stop
+DNS rebinding. The access log records method, route, status and duration only:
+never the query string, the headers or the client address.
 
 | Method | Path | Notes |
 | --- | --- | --- |
 | `GET` | `/search?q=…&page=N` | HTML by default, JSON with `format=json` or `Accept: application/json` |
-| `GET` | `/suggest?q=…` | `[query, [suggestions]]`, CORS enabled |
+| `GET` | `/suggest?q=…` | `[query, [suggestions]]` |
 | `GET` | `/stats` | Index and process statistics |
 | `GET` | `/health` | `{ status, version, uptimeSeconds }` |
 | `GET` | `/opensearch.xml` | OpenSearch description |

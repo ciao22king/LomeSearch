@@ -1,10 +1,11 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtempSync, rmSync } from 'node:fs';
+import { request as httpRequest } from 'node:http';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { SearchIndex } from '../src/index/index.js';
-import { startSearchServer } from '../src/server/http.js';
+import { isAllowedHost, startSearchServer } from '../src/server/http.js';
 import { IndexNowVerifier } from '../src/indexnow.js';
 
 const KEY = 'lomesearchkey1234';
@@ -60,7 +61,7 @@ test('search server serves pages, JSON, suggestions and IndexNow', async () => {
     const payload = (await json.json()) as { total: number; results: Array<{ url: string }> };
     assert.equal(payload.total, 1);
     assert.equal(payload.results[0]!.url, 'https://example.com/privacy');
-    assert.equal(json.headers.get('access-control-allow-origin'), '*');
+    assert.equal(json.headers.get('access-control-allow-origin'), null);
     assert.equal(json.headers.get('referrer-policy'), 'no-referrer');
     assert.equal(json.headers.get('x-content-type-options'), 'nosniff');
 
@@ -159,6 +160,59 @@ test('indexnow rejects a key file that does not match', async () => {
       body: JSON.stringify({ host: HOST, key: KEY, urlList: ['https://example.com/x'] }),
     });
     assert.equal(response.status, 403);
+  } finally {
+    await server.close();
+    index.close();
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('isAllowedHost accepts loopback, bind address and explicit names only', () => {
+  assert.equal(isAllowedHost('127.0.0.1:7717', '127.0.0.1'), true);
+  assert.equal(isAllowedHost('localhost:7717', '127.0.0.1'), true);
+  assert.equal(isAllowedHost('[::1]:7717', '127.0.0.1'), true);
+  assert.equal(isAllowedHost('search.local', '127.0.0.1'), false);
+  assert.equal(isAllowedHost('search.local:7717', '127.0.0.1', ['search.local']), true);
+  assert.equal(isAllowedHost('attacker.example', '127.0.0.1'), false);
+  assert.equal(isAllowedHost(undefined, '127.0.0.1'), false);
+});
+
+test('server rejects foreign Host headers and never sends CORS wildcards', async () => {
+  const dir = tempDir();
+  const index = SearchIndex.open(dir);
+  index.addDocument({
+    url: 'https://example.com/privacy',
+    title: 'Privacy',
+    body: 'Indice locale, nessuna query registrata.',
+  });
+  index.commit();
+  const server = await startSearchServer({
+    index,
+    port: 0,
+    engineHost: 'search.local',
+    submitUrls: () => 0,
+  });
+  try {
+    const status = await new Promise<number>((resolve, reject) => {
+      const request = httpRequest(
+        { host: '127.0.0.1', port: server.port, path: '/health', headers: { host: 'attacker.example' } },
+        (response) => {
+          response.resume();
+          resolve(response.statusCode ?? 0);
+        },
+      );
+      request.on('error', reject);
+      request.end();
+    });
+    assert.equal(status, 421);
+
+    const suggest = await fetch(`${server.origin}/suggest?q=priv`);
+    assert.equal(suggest.status, 200);
+    assert.equal(suggest.headers.get('access-control-allow-origin'), null);
+
+    const preflight = await fetch(`${server.origin}/suggest`, { method: 'OPTIONS' });
+    assert.equal(preflight.status, 204);
+    assert.equal(preflight.headers.get('access-control-allow-origin'), null);
   } finally {
     await server.close();
     index.close();

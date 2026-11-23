@@ -82,6 +82,7 @@ export function registerIpc(ctx: AppContext): void {
     event.returnValue = {
       fingerprintProtection: ctx.store.settings.value.privacy.fingerprintProtection,
       fingerprintSeed,
+      webrtcPolicy: ctx.store.settings.value.privacy.webrtcPolicy ?? 'disable',
       theme: ctx.store.settings.value.theme,
       isPrivate: ctx.windowForWebContents(event.sender.id)?.isPrivate ?? false,
       version: app.getVersion(),

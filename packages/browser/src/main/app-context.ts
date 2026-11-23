@@ -68,7 +68,6 @@ export class AppContext {
 
   async initialise(): Promise<void> {
     this.configureSession(session.defaultSession, false);
-    session.defaultSession.setSpellCheckerLanguages(['it', 'en-US']);
     await this.extensions.loadAll(session.defaultSession);
     await this.privacy.loadRemoteBlocklist();
     await this.engine.start();
@@ -185,5 +184,8 @@ export class AppContext {
     });
     this.permissions.configure(ses);
     this.downloads.attach(ses, { private: isPrivate });
+    const spellchecker = this.store.settings.value.privacy.spellchecker;
+    ses.setSpellCheckerEnabled(spellchecker);
+    if (spellchecker) ses.setSpellCheckerLanguages(['it', 'en-US']);
   }
 }

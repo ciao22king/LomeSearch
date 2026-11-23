@@ -142,6 +142,14 @@ function renderExceptions(): void {
   exceptionsCard.append(form);
 }
 
+function networkRow(label: string, detail: string): HTMLElement {
+  return el(
+    'div',
+    { class: 'row' },
+    el('div', { class: 'label' }, el('strong', {}, label), el('small', {}, detail)),
+  );
+}
+
 function renderSettings(): void {
   clear(settingsCard);
   settingsCard.append(
@@ -175,6 +183,31 @@ function renderSettings(): void {
       'Rumore stabile per sito su canvas, WebGL e audio.',
       current.privacy.fingerprintProtection,
       (value) => patchPrivacy({ fingerprintProtection: value }),
+    ),
+    networkRow(
+      'WebRTC',
+      current.privacy.webrtcPolicy === 'disable'
+        ? 'Bloccato: nessun UDP diretto, nessun IP locale verso i siti.'
+        : current.privacy.webrtcPolicy === 'public-interface'
+          ? 'Solo interfaccia pubblica: gli IP locali non escono.'
+          : 'Comportamento Chromium: può esporre IP locali.',
+    ),
+    networkRow(
+      'Referer',
+      current.privacy.referrerPolicy === 'none'
+        ? 'Mai inviato.'
+        : current.privacy.referrerPolicy === 'origin'
+          ? 'Sempre ridotto all’origine.'
+          : 'Origine tra siti diversi, URL completo solo nello stesso sito.',
+    ),
+    networkRow('Fuso orario', current.privacy.spoofTimezone ? 'UTC' : 'Fuso orario del sistema.'),
+    networkRow(
+      'DNS',
+      current.privacy.dnsOverHttps ? 'Cloudflare DoH (richiede riavvio).' : 'Risolutore del sistema operativo.',
+    ),
+    networkRow(
+      'Correttore ortografico',
+      current.privacy.spellchecker ? 'Attivo: scarica i dizionari da un CDN di Google.' : 'Disattivato.',
     ),
   );
 }

@@ -5,7 +5,8 @@ import { AppContext } from './app-context.js';
 import { registerIpc } from './ipc.js';
 import { buildAppMenu } from './menu.js';
 import { internalUrl, registerInternalScheme } from './internal-pages.js';
-import type { Settings } from '../shared/types.js';
+import { privacySwitches, timezoneValue } from './privacy-switches.js';
+import type { PrivacySettings, Settings } from '../shared/types.js';
 
 /**
  * Entry point.
@@ -20,7 +21,7 @@ if (process.platform === 'win32') app.setAppUserModelId('dev.lomesearch.browser'
 
 const userDataDir = safePath('userData');
 const earlySettings = readEarlySettings(userDataDir);
-applyPrivacySwitches(earlySettings);
+applyPrivacySwitches(earlySettings?.privacy ?? null);
 registerInternalScheme();
 app.userAgentFallback = app.userAgentFallback
   .replace(/\sElectron\/[\d.]+/i, '')
@@ -144,13 +145,13 @@ function readEarlySettings(dir: string): Settings | null {
   }
 }
 
-function applyPrivacySwitches(settings: Settings | null): void {
-  if (settings?.privacy?.dnsOverHttps === false) return;
-  app.commandLine.appendSwitch('enable-features', 'DnsOverHttps');
-  app.commandLine.appendSwitch(
-    'dns-over-https-templates',
-    'https://cloudflare-dns.com/dns-query{?dns}',
-  );
+function applyPrivacySwitches(privacy: PrivacySettings | null): void {
+  const zone = timezoneValue(privacy);
+  if (zone) process.env.TZ = zone;
+  for (const item of privacySwitches(privacy)) {
+    if (item.value === undefined) app.commandLine.appendSwitch(item.name);
+    else app.commandLine.appendSwitch(item.name, item.value);
+  }
 }
 
 process.on('uncaughtException', (error) => {

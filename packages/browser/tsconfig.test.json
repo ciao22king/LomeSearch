@@ -16,6 +16,7 @@
     "src/main/store.ts",
     "src/main/search.ts",
     "src/main/privacy.ts",
+    "src/main/privacy-switches.ts",
     "src/shared/**/*.ts",
     "test/**/*.ts"
   ]
