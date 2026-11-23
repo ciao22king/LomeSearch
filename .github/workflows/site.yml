@@ -64,11 +64,33 @@ jobs:
           console.log('site links ok');
           NODE
 
+      # Pages cannot be switched on by a workflow token: the site owner does it
+      # once in Settings -> Pages -> Source: GitHub Actions. Until then the job
+      # stays green and skips the deployment instead of failing on every push.
+      - name: Check that Pages is enabled
+        id: pages
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          status=$(curl -s -o /dev/null -w '%{http_code}' \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H 'Accept: application/vnd.github+json' \
+            "${{ github.api_url }}/repos/${{ github.repository }}/pages")
+          if [ "$status" = "200" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "::notice title=Pages not enabled::Enable GitHub Pages in Settings -> Pages -> Source: GitHub Actions to publish site/."
+          fi
+
       - uses: actions/configure-pages@v5
+        if: steps.pages.outputs.enabled == 'true'
 
       - uses: actions/upload-pages-artifact@v3
+        if: steps.pages.outputs.enabled == 'true'
         with:
           path: site
 
       - id: deployment
         uses: actions/deploy-pages@v4
+        if: steps.pages.outputs.enabled == 'true'
