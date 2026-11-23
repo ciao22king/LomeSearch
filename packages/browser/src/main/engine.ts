@@ -95,6 +95,8 @@ export class EngineManager {
         settings.host,
         '--engine-host',
         `${settings.host}:${settings.port}`,
+        '--parent-pid',
+        String(process.pid),
         '--quiet',
       ],
       {

@@ -84,8 +84,9 @@ main { margin-top: 20px; }
 ol.results { list-style: none; margin: 0; padding: 0; }
 ol.results li { padding: 18px 0; border-top: 1px solid var(--line); }
 ol.results li:first-child { border-top: 0; }
-.result-site { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
-.result-site .dot { width: 4px; height: 4px; border-radius: 50%; background: var(--muted); display: inline-block; }
+.result-site { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); min-width: 0; }
+.result-site span:last-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.result-site .dot { flex: none; width: 4px; height: 4px; border-radius: 50%; background: var(--muted); display: inline-block; }
 h2.result-title { margin: 4px 0 2px; font-size: 18px; line-height: 1.35; font-weight: 600; }
 h2.result-title a { color: var(--accent); }
 p.result-url { margin: 0 0 6px; font-size: 13px; color: var(--muted); word-break: break-all; }

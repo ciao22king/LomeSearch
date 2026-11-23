@@ -49,6 +49,43 @@ const SKIPPED_ELEMENTS = new Set([
   'math',
 ]);
 
+/**
+ * Page furniture: menus, cookie bars, sidebars. Keeping it out of the text
+ * improves snippets and stops navigation labels from diluting the ranking.
+ * `header`/`footer` are skipped only outside `article`/`main`, where they wrap
+ * the actual content on sites that use landmarks loosely.
+ */
+const BOILERPLATE_ELEMENTS = new Set(['nav', 'aside', 'dialog', 'form']);
+
+const LANDMARK_ELEMENTS = new Set(['article', 'main']);
+
+/** Accessibility helpers ("skip to content", "sr-only") are never content. */
+const BOILERPLATE_CLASSES = new Set([
+  'sr-only',
+  'visually-hidden',
+  'screen-reader-text',
+  'screen-reader-only',
+  'offscreen',
+]);
+
+const isBoilerplateClass = (value: string | undefined): boolean => {
+  if (!value) return false;
+  for (const token of value.toLowerCase().split(/\s+/)) {
+    if (BOILERPLATE_CLASSES.has(token)) return true;
+    if (token === 'skip' || token.startsWith('skip-') || token.startsWith('skip_')) return true;
+  }
+  return false;
+};
+
+const BOILERPLATE_ROLES = new Set([
+  'navigation',
+  'banner',
+  'contentinfo',
+  'search',
+  'menu',
+  'menubar',
+]);
+
 const BLOCK_ELEMENTS = new Set([
   'address',
   'article',
@@ -307,6 +344,9 @@ export function extractHtml(html: string, options: ExtractOptions = {}): Extract
   const textParts: string[] = [];
   let index = 0;
   let skipUntil: string | null = null;
+  let boilerTag: string | null = null;
+  let boilerDepth = 0;
+  let landmarkDepth = 0;
   let titleCapture: string[] | null = null;
   let headingTag: string | null = null;
   let headingBuffer: string[] = [];
@@ -317,12 +357,14 @@ export function extractHtml(html: string, options: ExtractOptions = {}): Extract
   const source = html;
   const length = source.length;
 
+  // Link text is collected even inside page furniture: the frontier needs the
+  // menu links to discover the site, only the indexed text is filtered.
   const appendText = (value: string): void => {
     if (!value) return;
     if (titleCapture) titleCapture.push(value);
     if (headingTag) headingBuffer.push(value);
     if (anchorDepth > 0) anchorText.push(value);
-    textParts.push(value);
+    if (!boilerTag) textParts.push(value);
   };
 
   while (index < length) {
@@ -353,6 +395,14 @@ export function extractHtml(html: string, options: ExtractOptions = {}): Extract
       const rawName = source.slice(lt + 2, close === -1 ? length : close).trim().toLowerCase();
       index = close === -1 ? length : close + 1;
       if (skipUntil && rawName === skipUntil) skipUntil = null;
+      if (boilerTag && rawName === boilerTag) {
+        boilerDepth--;
+        if (boilerDepth <= 0) {
+          boilerTag = null;
+          boilerDepth = 0;
+        }
+      }
+      if (landmarkDepth > 0 && LANDMARK_ELEMENTS.has(rawName)) landmarkDepth--;
       if (titleCapture && rawName === 'title') {
         const title = titleCapture.join('').replace(/\s+/g, ' ').trim();
         if (!page.title && title) page.title = title;
@@ -360,7 +410,7 @@ export function extractHtml(html: string, options: ExtractOptions = {}): Extract
       }
       if (headingTag && rawName === headingTag) {
         const heading = headingBuffer.join('').replace(/\s+/g, ' ').trim();
-        if (heading && page.headings.length < 64) page.headings.push(heading);
+        if (heading && !boilerTag && page.headings.length < 64) page.headings.push(heading);
         headingTag = null;
         headingBuffer = [];
       }
@@ -393,6 +443,23 @@ export function extractHtml(html: string, options: ExtractOptions = {}): Extract
     const { name, attributes, selfClosing } = parsed.tag;
 
     if (skipUntil) continue;
+
+    if (boilerTag) {
+      if (name === boilerTag) boilerDepth++;
+    } else {
+      const role = (attributes.get('role') ?? '').trim().toLowerCase();
+      const isBoilerplate =
+        BOILERPLATE_ELEMENTS.has(name) ||
+        BOILERPLATE_ROLES.has(role) ||
+        attributes.get('aria-hidden') === 'true' ||
+        isBoilerplateClass(attributes.get('class')) ||
+        ((name === 'header' || name === 'footer') && landmarkDepth === 0);
+      if (isBoilerplate && !selfClosing) {
+        boilerTag = name;
+        boilerDepth = 1;
+      }
+    }
+    if (!boilerTag && LANDMARK_ELEMENTS.has(name)) landmarkDepth++;
 
     if (SKIPPED_ELEMENTS.has(name)) {
       if (!selfClosing) skipUntil = name;

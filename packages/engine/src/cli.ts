@@ -40,6 +40,7 @@ serve:
   --port <n>             port (default ${DEFAULT_PORT}; 0 = random)
   --bind <address>       listen address (default 127.0.0.1)
   --engine-host <host>   public name used in OpenSearch links
+  --parent-pid <pid>     exit when that process disappears (used by the app)
   --key <key>            IndexNow key served from /indexnow/<key>.txt
   --seed <url>           starting URL (repeatable)
   --crawl                crawl the seeds immediately
@@ -128,6 +129,7 @@ async function commandServe(argv: string[]): Promise<void> {
       port: { type: 'string' },
       bind: { type: 'string' },
       'engine-host': { type: 'string' },
+      'parent-pid': { type: 'string' },
       key: { type: 'string' },
       seed: { type: 'string', multiple: true },
       crawl: { type: 'boolean' },
@@ -179,6 +181,9 @@ async function commandServe(argv: string[]): Promise<void> {
     );
   }
 
+  const parentPid = numberOption(values['parent-pid'], 0);
+  if (parentPid > 0) watchParent(parentPid);
+
   let closing = false;
   const shutdown = async (): Promise<void> => {
     if (closing) return;
@@ -190,6 +195,23 @@ async function commandServe(argv: string[]): Promise<void> {
   };
   process.on('SIGINT', () => void shutdown());
   process.on('SIGTERM', () => void shutdown());
+}
+
+/**
+ * The browser spawns the engine as a child. Without this, a crash of the parent
+ * leaves the engine running with a stale in-memory index, and the next launch
+ * silently attaches to it instead of reading the data directory.
+ */
+function watchParent(pid: number): void {
+  const timer = setInterval(() => {
+    try {
+      process.kill(pid, 0);
+    } catch {
+      process.stderr.write(`parent ${pid} is gone, stopping\n`);
+      process.exit(0);
+    }
+  }, 5_000);
+  timer.unref();
 }
 
 function loadOrCreateKey(dir: string): string {

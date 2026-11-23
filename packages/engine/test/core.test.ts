@@ -51,6 +51,54 @@ test('extractHtml reads the document head and body', () => {
   assert.equal(page.links[1]!.nofollow, false);
 });
 
+test('extractHtml drops menus, sidebars and hidden nodes', () => {
+  const page = extractHtml(`<body>
+    <header><p>LomeSearch blog</p></header>
+    <nav><a href="/a">Casa</a> <a href="/b">Chi siamo</a></nav>
+    <aside><p>Pubblicita</p></aside>
+    <div role="navigation"><p>Menu laterale</p></div>
+    <div aria-hidden="true"><p>Nascosto</p></div>
+    <form><input value="cerca"><button>Cerca</button></form>
+    <main>
+      <h1>Titolo</h1>
+      <p>Il contenuto che conta.</p>
+    </main>
+    <footer><p>Copyright 2026</p></footer>
+  </body>`);
+
+  assert.match(page.text, /Il contenuto che conta\./);
+  for (const furniture of ['Casa', 'Chi siamo', 'Pubblicita', 'Menu laterale', 'Nascosto', 'Copyright', 'LomeSearch blog']) {
+    assert.ok(!page.text.includes(furniture), `unexpected furniture in text: ${furniture}`);
+  }
+  assert.equal(page.links.length, 2, 'nav links stay available for the frontier');
+});
+
+test('extractHtml drops accessibility helpers', () => {
+  const page = extractHtml(
+    '<a class="skip-to-content" href="#main">Skip to main content</a>' +
+      '<p class="sr-only">Solo per screen reader</p><p>Testo reale</p>',
+  );
+  assert.ok(!page.text.includes('Skip to main content'));
+  assert.ok(!page.text.includes('Solo per screen reader'));
+  assert.match(page.text, /Testo reale/);
+});
+
+test('extractHtml keeps a header that wraps article content', () => {
+  const page = extractHtml(
+    '<article><header><h1>Titolo articolo</h1><p>Occhiello</p></header><p>Corpo</p></article>',
+  );
+  assert.match(page.text, /Titolo articolo/);
+  assert.match(page.text, /Occhiello/);
+  assert.match(page.text, /Corpo/);
+});
+
+test('extractHtml unwinds nested boilerplate of the same tag', () => {
+  const page = extractHtml('<nav><nav>annidato</nav>ancora menu</nav><p>dopo il menu</p>');
+  assert.ok(!page.text.includes('annidato'));
+  assert.ok(!page.text.includes('ancora menu'));
+  assert.match(page.text, /dopo il menu/);
+});
+
 test('extractHtml survives malformed markup', () => {
   const page = extractHtml('<p>uno <b>due<p>tre <a href=x>quattro</a> < 5 &unknown; <div');
   assert.match(page.text, /uno due/);
