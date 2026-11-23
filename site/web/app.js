@@ -313,9 +313,19 @@ function parseAddress(input) {
   return newEntry('search', { query: value, page: 1 });
 }
 
+function startSearch(query) {
+  remember(query);
+  navigate(newEntry('search', { query, page: 1 }));
+}
+
 function submitAddress(input) {
   hideSuggestions();
-  navigate(parseAddress(input));
+  const entry = parseAddress(input);
+  if (entry.kind === 'search') {
+    startSearch(entry.query);
+  } else {
+    navigate(entry);
+  }
   $('#omni').value = '';
 }
 
@@ -480,7 +490,7 @@ function renderNewTab() {
           class: 'search-big',
           onsubmit: (event) => {
             event.preventDefault();
-            if (input.value.trim()) navigate(newEntry('search', { query: input.value.trim(), page: 1 }));
+            if (input.value.trim()) startSearch(input.value.trim());
           },
         },
         input,
@@ -534,7 +544,7 @@ function renderNewTab() {
                 'button',
                 {
                   type: 'button',
-                  onclick: () => navigate(newEntry('search', { query, page: 1 })),
+                  onclick: () => startSearch(query),
                 },
                 el('span', { class: 'key' }, icon('search')),
                 query,
@@ -801,6 +811,7 @@ function renderHistory() {
           'button',
           {
             type: 'button',
+            id: 'clear-history',
             onclick: () => {
               state.history = [];
               saveHistory();
@@ -829,6 +840,7 @@ function renderSettings() {
   const themeSelect = el(
     'select',
     {
+      id: 'theme',
       onchange: (event) => {
         state.settings.theme = event.target.value;
         saveSettings();
@@ -844,6 +856,7 @@ function renderSettings() {
   const perPageSelect = el(
     'select',
     {
+      id: 'per-page',
       onchange: (event) => {
         state.settings.perPage = Number(event.target.value);
         saveSettings();
@@ -857,6 +870,7 @@ function renderSettings() {
   const handoffSelect = el(
     'select',
     {
+      id: 'handoff',
       onchange: (event) => {
         state.settings.handoff = event.target.value;
         saveSettings();
@@ -870,6 +884,7 @@ function renderSettings() {
 
   const rememberToggle = el('input', {
     type: 'checkbox',
+    id: 'remember',
     checked: state.settings.remember,
     onchange: (event) => {
       state.settings.remember = event.target.checked;
@@ -885,12 +900,13 @@ function renderSettings() {
     el(
       'div',
       { class: 'card card--spaced' },
-      field('Tema', 'La finestra segue il sistema, oppure la forzi.', themeSelect),
-      field('Risultati per pagina', 'Quanti risultati mostrare in una pagina di risultati.', perPageSelect),
+      field('Tema', 'La finestra segue il sistema, oppure la forzi.', themeSelect, 'theme'),
+      field('Risultati per pagina', 'Quanti risultati mostrare in una pagina di risultati.', perPageSelect, 'per-page'),
       field(
         'Motore di riserva',
         'Il riquadro in fondo ai risultati. Il link non parte da solo: la query esce solo se lo apri.',
         handoffSelect,
+        'handoff',
       ),
       el(
         'div',
@@ -933,13 +949,11 @@ function renderSettings() {
   );
 }
 
-function field(label, hint, control) {
-  return el(
-    'div',
-    { class: 'field' },
-    el('div', { class: 'field__label' }, label, el('small', {}, hint)),
-    control,
-  );
+function field(label, hint, control, id) {
+  const caption = id
+    ? el('label', { class: 'field__label', for: id }, label, el('small', {}, hint))
+    : el('div', { class: 'field__label' }, label, el('small', {}, hint));
+  return el('div', { class: 'field' }, caption, control);
 }
 
 function renderPrivacy() {
