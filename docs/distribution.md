@@ -74,10 +74,11 @@ user right-clicks the app, picks Open, or clears the quarantine flag:
 xattr -dr com.apple.quarantine /Applications/LomeSearch.app
 ```
 
-The CI job for macOS is marked `continue-on-error`, because a GitHub account
-without macOS runner access gets the job cancelled in the first second. In that
-case build the bundles on any Mac with `npm run dist:mac`, or use a self-hosted
-macOS runner: the result is identical.
+The CI job for macOS only runs when the repository variable
+`ENABLE_MACOS_RUNNERS` is `true`, because a GitHub account without macOS runner
+access gets the job cancelled in the first second, and a cancelled job cancels
+the whole run. Turn the variable on once runners are available, or build the
+bundles on any Mac with `npm run dist:mac`; the result is identical.
 
 Signing and notarisation need an Apple Developer ID: set `CSC_LINK`,
 `CSC_KEY_PASSWORD`, `APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD` and
