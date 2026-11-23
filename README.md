@@ -24,6 +24,11 @@ privacy table and download links with checksums. It is plain HTML and CSS with n
 third-party requests, published by `.github/workflows/site.yml` once GitHub Pages
 is pointed at GitHub Actions for this repository.
 
+The mascot in `site/assets/mascot/` is 18×18 pixel art traced to a 813-byte SVG
+(`mascotte.svg`) so it stays sharp at any size; `mascotte-source.png` is the
+original export. The same SVG is reused by the browser error page and by the
+engine's empty-results page.
+
 ## Why another browser
 
 Chromium already ships a renderer, a sandbox and a web platform. What it does not

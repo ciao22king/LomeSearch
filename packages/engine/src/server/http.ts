@@ -54,6 +54,8 @@ const FAVICON = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
 <path d="M19 19l6 6" stroke="#e7f0ec" stroke-width="2.6" stroke-linecap="round"/>
 </svg>`;
 
+const MASCOT = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 18 18" width="18" height="18" shape-rendering="crispEdges" role="img" aria-label="LomeSearch mascot"><path fill="#4caf50" d="M1 1h3v2h-3zM6 1h1v2h-1zM4 2h2v1h-2zM7 2h1v2h-1zM1 3h1v1h-1zM2 4h1v1h-1zM4 4h1v2h-1zM6 4h1v1h-1z"/><path fill="#000000" d="M1 0h3v1h-3zM6 0h1v1h-1zM0 1h1v10h-1zM4 1h2v1h-2zM7 1h1v1h-1zM8 2h1v9h-1zM2 3h5v1h-5zM1 4h1v1h-1zM3 4h1v3h-1zM5 4h1v3h-1zM7 4h1v1h-1zM2 5h1v2h-1zM6 5h1v2h-1zM2 9h5v1h-5zM1 10h1v2h-1zM7 10h1v2h-1zM11 10h1v1h-1zM10 11h1v1h-1zM12 11h2v1h-2zM2 12h5v1h-5zM9 12h1v2h-1zM13 12h1v3h-1zM10 14h3v1h-3zM14 15h1v1h-1zM15 16h1v1h-1zM16 17h2v1h-2z"/><path fill="#f44336" d="M2 10h5v2h-5z"/><path fill="#ffffff" d="M1 5h1v5h-1zM7 5h1v5h-1zM4 6h1v3h-1zM2 7h2v2h-2zM5 7h2v2h-2zM11 11h1v3h-1zM10 12h1v2h-1zM12 12h1v2h-1z"/></svg>`;
+
 class RateLimiter {
   private readonly buckets = new Map<string, { count: number; resetAt: number }>();
 
@@ -151,6 +153,15 @@ export async function startSearchServer(options: SearchServerOptions): Promise<S
         'cache-control': 'public, max-age=86400',
       });
       response.end(FAVICON);
+      return;
+    }
+
+    if (url.pathname === '/mascot.svg' && request.method === 'GET') {
+      response.writeHead(200, {
+        'content-type': 'image/svg+xml',
+        'cache-control': 'public, max-age=86400',
+      });
+      response.end(MASCOT);
       return;
     }
 

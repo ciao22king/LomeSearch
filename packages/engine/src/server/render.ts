@@ -94,6 +94,14 @@ p.snippet { margin: 0; font-size: 15px; color: var(--text); }
 mark { background: var(--mark); color: var(--mark-text); padding: 0 1px; border-radius: 2px; }
 .notice { background: var(--accent-soft); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; font-size: 14px; }
 .empty { padding: 32px 0; }
+.empty .mascot {
+  display: block;
+  width: 64px;
+  height: 64px;
+  padding: 7px;
+  background: #ffffff;
+  border-radius: 12px;
+}
 .empty h2 { margin: 0 0 6px; font-size: 18px; }
 nav.pager { display: flex; gap: 10px; margin-top: 28px; }
 nav.pager a { padding: 8px 14px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); font-size: 14px; }
@@ -155,6 +163,7 @@ function renderResults(
   <p class="meta">No results for <strong>${escapeHtml(query)}</strong> in ${response.tookMs.toFixed(1)} ms.</p>
   ${suggestion}
   <div class="empty">
+    <img class="mascot" src="/mascot.svg" width="64" height="64" alt="">
     <h2>No document matches the query</h2>
     <p>Try fewer words, without quotes, or add more pages to the index with <code>lomesearch crawl</code>.</p>
   </div>

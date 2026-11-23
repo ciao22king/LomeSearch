@@ -31,6 +31,7 @@ const shell = el(
   el(
     'div',
     { class: 'error-page' },
+    el('img', { class: 'mascot', src: '/pages/mascotte.svg', alt: '', width: 88, height: 88 }),
     el('h1', {}, 'This site cannot be reached'),
     el('p', { class: 'muted' }, message),
     el('p', { class: 'url' }, url || description),

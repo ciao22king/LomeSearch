@@ -22,6 +22,8 @@
   --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
   --radius: 4px;
   --radius-lg: 10px;
+  --mascot-plate: #ffffff;
+  --mascot-line: #cfcbc1;
 }
 
 [data-theme="dark"] {
@@ -39,6 +41,8 @@
   --green-soft: #16241f;
   --gold: #e0b25c;
   --gold-soft: #3b2e13;
+  --mascot-plate: #f7f5ef;
+  --mascot-line: #f7f5ef;
   --shadow: 0 30px 70px -40px rgba(0, 0, 0, 0.9);
 }
 
@@ -58,6 +62,8 @@
     --green-soft: #16241f;
     --gold: #e0b25c;
     --gold-soft: #3b2e13;
+    --mascot-plate: #f7f5ef;
+    --mascot-line: #f7f5ef;
     --shadow: 0 30px 70px -40px rgba(0, 0, 0, 0.9);
   }
 }
@@ -282,6 +288,28 @@ ol {
   display: none;
 }
 
+/* ---------- mascot ---------- */
+
+.mascot {
+  --mascot-size: 96px;
+  display: inline-grid;
+  place-items: center;
+  width: var(--mascot-size);
+  height: var(--mascot-size);
+  padding: calc(var(--mascot-size) * 0.1);
+  background: var(--mascot-plate);
+  border: 1px solid var(--mascot-line);
+  border-radius: calc(var(--mascot-size) * 0.16);
+  box-shadow: 0 20px 44px -26px rgba(9, 12, 11, 0.7);
+  line-height: 0;
+}
+
+.mascot img {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
 /* ---------- hero ---------- */
 
 .hero {
@@ -294,6 +322,17 @@ ol {
   grid-template-columns: 1.08fr 1fr;
   gap: 3rem;
   align-items: center;
+}
+
+.hero__shot {
+  position: relative;
+}
+
+.hero__shot .mascot {
+  position: absolute;
+  left: -1.75rem;
+  bottom: -1.75rem;
+  transform: rotate(-4deg);
 }
 
 .kicker {
@@ -1163,6 +1202,12 @@ dialog.lightbox img {
   .hero__grid {
     grid-template-columns: 1fr;
     gap: 2.75rem;
+  }
+
+  .hero__shot .mascot {
+    --mascot-size: 64px;
+    left: 0.75rem;
+    bottom: -1.75rem;
   }
 
   .hero {
