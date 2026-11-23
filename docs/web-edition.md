@@ -9,6 +9,11 @@ nobody has to trust.
 https://ciao22king.github.io/LomeSearch/web/
 ```
 
+The Pages site has to be switched on once by the repository owner
+(Settings → Pages → Source: GitHub Actions). Until then `.github/workflows/site.yml`
+still builds and checks everything and skips only the upload step, with a notice
+in the run summary.
+
 ## What runs where
 
 | Layer | File | Notes |
