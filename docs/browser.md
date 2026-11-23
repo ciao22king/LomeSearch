@@ -24,8 +24,24 @@ needed for internal pages. Both run with `sandbox: true`,
 ## Tabs
 
 `Tab` wraps a `WebContentsView` and tracks title, URL, favicon, loading state,
-audio, crash state and full-screen requests. `TabManager` owns the ordered list,
+audio, crash state, preview and freeze state. `TabManager` owns the ordered list,
 the active tab, and a 25-entry closed-tab stack for `Ctrl+Shift+T`.
+
+The tab strip is a vertical sidebar on the left: the chrome view fills the whole
+window, the page view is inset by `SIDEBAR_WIDTH` (268 px) and `TOOLBAR_HEIGHT`
+(48 px), and the chrome view is raised above the page only while a panel is
+open. Each sidebar item shows a JPEG preview captured with
+`webContents.capturePage()` when the tab finishes loading and when it is left.
+
+Freezing is a real discard, not a throttle: `Tab.freeze()` reads the scroll
+offset, closes the `WebContentsView` and keeps the URL. The next selection calls
+`thaw()`, creates a fresh view and reloads the page at the saved offset. The
+policy lives in `shared/freeze.ts` (`shouldFreeze`) and skips the active tab,
+audible tabs, tabs that are loading and tabs that are already frozen. The delay
+is `performance.freezeAfterMinutes` (default 20, `0` disables it), the timer runs
+every 30 seconds, and `Freeze idle` in the sidebar footer forces it once.
+Session restore creates background tabs lazily, so restoring twenty tabs does not
+start twenty renderers.
 
 Tabs are created with a session: the default session for normal windows, an
 in-memory session for private windows. The session also decides which extension
@@ -44,6 +60,7 @@ Internal pages live under the `lomesearch://` scheme:
 | `lomesearch://extensions` | Extension manager |
 | `lomesearch://privacy` | Privacy report: blocked requests by domain |
 | `lomesearch://settings` | Settings |
+| `lomesearch://legal` | Licence, acceptable use, fake-IP limits |
 | `lomesearch://about` | Version and engine information |
 | `lomesearch://error` | Error page for failed loads |
 
@@ -83,9 +100,15 @@ running, the suggestion falls back to the configured remote engine and says so.
 
 `PrivacyManager` installs `webRequest` handlers on the session:
 
-- **Tracker blocking** — host blocklist plus path patterns, applied to
-  third-party requests. First-party requests are only blocked for path patterns.
-  Per-site exceptions (`exceptions.json`) disable blocking for a domain.
+- **Tracker and ad blocking** — 213 built-in rules (117 tracker hosts, 82 ad
+  network hosts, 15 path patterns) applied to third-party requests; first-party
+  requests are only blocked by path pattern. Trackers and ads have separate
+  switches. Per-site exceptions (`exceptions.json`) disable both for a domain.
+- **Cosmetic filtering** — a short CSS list injected at document start hides
+  common ad containers. Generic selectors such as `.ad` are excluded on purpose.
+- **Decoy IP headers** — when enabled, `X-Forwarded-For`, `X-Real-IP`,
+  `Client-IP` and `Forwarded` carry a reserved RFC 5737 address. This does not
+  hide the real source address; see `docs/legal.md`.
 - **Cookie hygiene** — third-party cookies and storage are stripped; `DNT: 1` and
   `Sec-GPC: 1` are always sent; client hints are removed when fingerprint
   protection is on.

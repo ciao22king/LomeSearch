@@ -12,92 +12,94 @@ import {
   toggleRow,
 } from './common.js';
 
-const { main, settings: initial } = await initPage('settings', 'Impostazioni');
+const { main, settings: initial } = await initPage('settings', 'Settings');
 let current: Settings = initial;
 
-main.append(
-  heading('Impostazioni', 'Tutto viene salvato in locale, nella cartella dati del browser.'),
-);
+main.append(heading('Settings', 'Everything is stored locally, in the browser data folder.'));
 
 async function patch(update: Partial<Settings>): Promise<void> {
   current = await lome.settings.update(update);
-  toast('Impostazioni salvate');
+  toast('Settings saved');
 }
 
-// ------------------------------------------------------------------ ricerca
+function privacyPatch(update: Partial<Settings['privacy']>): Promise<void> {
+  return patch({ privacy: { ...current.privacy, ...update } });
+}
+
+// ------------------------------------------------------------------- search
 
 main.append(
   card(
-    'Ricerca',
-    'L’indice locale è il motore predefinito: le query non lasciano il computer.',
+    'Search',
+    'The local index is the default engine: queries never leave the computer.',
     selectRow(
-      'Motore predefinito',
-      'Usato dalla barra degli indirizzi e dalla pagina iniziale.',
+      'Default engine',
+      'Used by the address bar and the new tab page.',
       [
-        { value: 'local', label: 'LomeSearch (indice locale)' },
+        { value: 'local', label: 'LomeSearch (local index)' },
         { value: 'duckduckgo', label: 'DuckDuckGo' },
         { value: 'brave', label: 'Brave Search' },
         { value: 'startpage', label: 'Startpage' },
-        { value: 'custom', label: 'Personalizzato' },
+        { value: 'custom', label: 'Custom' },
       ],
       current.searchEngine,
       (value) => patch({ searchEngine: value as Settings['searchEngine'] }),
     ),
     inputRow(
-      'URL del motore personalizzato',
-      'Usa %s al posto della query. Esempio: https://example.com/search?q=%s',
+      'Custom engine URL',
+      'Use %s for the query. Example: https://example.com/search?q=%s',
       current.customSearchUrl,
       'https://example.com/search?q=%s',
       (value) => patch({ customSearchUrl: value }),
       'url',
     ),
     inputRow(
-      'Pagina iniziale',
-      'Indirizzo aperto con il pulsante Home e all’avvio, se selezionato.',
+      'Home page',
+      'Opened by the Home button and at startup when selected.',
       current.homepage,
       'lomesearch://newtab',
       (value) => patch({ homepage: value }),
       'url',
     ),
     selectRow(
-      'All’avvio',
-      'Cosa mostrare quando LomeSearch parte.',
+      'On startup',
+      'What LomeSearch shows when it starts.',
       [
-        { value: 'newtab', label: 'Nuova scheda' },
-        { value: 'restore', label: 'Riprendi le schede precedenti' },
-        { value: 'homepage', label: 'Pagina iniziale' },
+        { value: 'newtab', label: 'New tab' },
+        { value: 'restore', label: 'Restore previous tabs' },
+        { value: 'homepage', label: 'Home page' },
       ],
       current.startup,
       (value) => patch({ startup: value as Settings['startup'] }),
     ),
     toggleRow(
-      'Suggerimenti dalla cronologia',
-      'Completa la barra degli indirizzi con le pagine già visitate.',
+      'History suggestions',
+      'Complete the address bar with pages you already visited.',
       current.suggestFromHistory,
       (value) => patch({ suggestFromHistory: value }),
     ),
     toggleRow(
-      'Suggerimenti dal motore',
-      'Chiede i completamenti all’indice locale mentre digiti.',
+      'Engine suggestions',
+      'Ask the local index for completions while you type.',
       current.suggestFromEngine,
       (value) => patch({ suggestFromEngine: value }),
     ),
   ),
 );
 
-// ------------------------------------------------------------------ aspetto
+// --------------------------------------------------------------- appearance
 
 main.append(
   card(
-    'Aspetto',
-    null,
+    'Appearance',
+    'Tabs live in the left sidebar with a preview of each page.',
     selectRow(
-      'Tema',
-      'Segue il sistema oppure forza chiaro o scuro.',
+      'Theme',
+      'Follow the system or force light or dark.',
       [
-        { value: 'system', label: 'Sistema' },
-        { value: 'light', label: 'Chiaro' },
-        { value: 'dark', label: 'Scuro' },
+        { value: 'system', label: 'System' },
+        { value: 'light', label: 'Light' },
+        { value: 'dark', label: 'Dark' },
       ],
       current.theme,
       async (value) => {
@@ -105,112 +107,162 @@ main.append(
         await patch({ theme: value as Settings['theme'] });
       },
     ),
+    toggleRow(
+      'Tab previews',
+      'Capture a thumbnail when a tab loads and when you switch away from it.',
+      current.appearance.tabPreviews,
+      (value) => patch({ appearance: { ...current.appearance, tabPreviews: value } }),
+    ),
+    selectRow(
+      'Freeze idle tabs after',
+      'A frozen tab releases its renderer and reloads when you select it again.',
+      [
+        { value: '5', label: '5 minutes' },
+        { value: '15', label: '15 minutes' },
+        { value: '30', label: '30 minutes' },
+        { value: '60', label: '1 hour' },
+        { value: '0', label: 'Never' },
+      ],
+      String(current.performance.freezeAfterMinutes),
+      (value) => patch({ performance: { ...current.performance, freezeAfterMinutes: Number(value) } }),
+    ),
   ),
 );
 
 // ------------------------------------------------------------------ privacy
 
-const privacy = current.privacy;
 main.append(
   card(
     'Privacy',
-    'Le protezioni si applicano a tutte le schede, comprese le estensioni.',
+    'These protections apply to every tab, extensions included.',
     toggleRow(
-      'Blocca tracker e pubblicità',
-      'Lista integrata di domini pubblicitari, analytics e fingerprinting.',
-      privacy.blockTrackers,
-      (value) => patch({ privacy: { ...current.privacy, blockTrackers: value } }),
+      'Block trackers',
+      'Built-in list of analytics, session replay and fingerprinting domains.',
+      current.privacy.blockTrackers,
+      (value) => privacyPatch({ blockTrackers: value }),
     ),
     toggleRow(
-      'Blocca cookie di terze parti',
-      'Rimuove Cookie e Set-Cookie per domini diversi da quello visitato.',
-      privacy.blockThirdPartyCookies,
-      (value) => patch({ privacy: { ...current.privacy, blockThirdPartyCookies: value } }),
+      'Block ads',
+      'Built-in list of ad networks, separate from the tracker list.',
+      current.privacy.blockAds,
+      (value) => privacyPatch({ blockAds: value }),
     ),
     toggleRow(
-      'HTTPS prima',
-      'Prova la versione cifrata e torna a HTTP solo se il sito non la supporta.',
-      privacy.httpsFirst,
-      (value) => patch({ privacy: { ...current.privacy, httpsFirst: value } }),
+      'Hide ad slots',
+      'Injects a small CSS list that removes common ad containers before they render.',
+      current.privacy.cosmeticFiltering,
+      (value) => privacyPatch({ cosmeticFiltering: value }),
     ),
     toggleRow(
-      'Invia Do Not Track e Global Privacy Control',
-      'Segnala ai siti di non tracciare la navigazione.',
-      privacy.sendDoNotTrack,
-      (value) => patch({ privacy: { ...current.privacy, sendDoNotTrack: value } }),
+      'Block third-party cookies',
+      'Removes Cookie and Set-Cookie headers for domains other than the page you visit.',
+      current.privacy.blockThirdPartyCookies,
+      (value) => privacyPatch({ blockThirdPartyCookies: value }),
     ),
     toggleRow(
-      'Protezione dal fingerprinting',
-      'Rumore deterministico su canvas, WebGL, audio, dispositivi e hardware.',
-      privacy.fingerprintProtection,
-      (value) => patch({ privacy: { ...current.privacy, fingerprintProtection: value } }),
+      'HTTPS first',
+      'Try the encrypted version and fall back to HTTP only when the site cannot serve it.',
+      current.privacy.httpsFirst,
+      (value) => privacyPatch({ httpsFirst: value }),
+    ),
+    toggleRow(
+      'Send Do Not Track and Global Privacy Control',
+      'Tells sites not to track the visit.',
+      current.privacy.sendDoNotTrack,
+      (value) => privacyPatch({ sendDoNotTrack: value }),
+    ),
+    toggleRow(
+      'Fingerprint protection',
+      'Deterministic noise on canvas, WebGL, audio, devices and hardware counts.',
+      current.privacy.fingerprintProtection,
+      (value) => privacyPatch({ fingerprintProtection: value }),
     ),
     selectRow(
       'WebRTC',
-      'Blocca le connessioni UDP dirette: senza proxy non espone IP locali o reali. Richiede il riavvio.',
+      'Blocking stops ICE candidates from carrying local or public addresses. Restart required.',
       [
-        { value: 'disable', label: 'Blocca (consigliato)' },
-        { value: 'public-interface', label: 'Solo interfaccia pubblica' },
-        { value: 'default', label: 'Comportamento Chromium' },
+        { value: 'disable', label: 'Block (recommended)' },
+        { value: 'public-interface', label: 'Public interface only' },
+        { value: 'default', label: 'Chromium default' },
       ],
-      privacy.webrtcPolicy,
+      current.privacy.webrtcPolicy,
       (value) =>
-        patch({
-          privacy: { ...current.privacy, webrtcPolicy: value as Settings['privacy']['webrtcPolicy'] },
-        }),
+        privacyPatch({ webrtcPolicy: value as Settings['privacy']['webrtcPolicy'] }),
     ),
     selectRow(
       'Referer',
-      'Quanto dell’URL precedente viene inviato al sito di destinazione.',
+      'How much of the previous URL is sent to the destination.',
       [
-        { value: 'strict', label: 'Solo origine tra siti diversi (consigliato)' },
-        { value: 'origin', label: 'Sempre solo origine' },
-        { value: 'none', label: 'Mai' },
+        { value: 'strict', label: 'Origin only across sites (recommended)' },
+        { value: 'origin', label: 'Origin only, always' },
+        { value: 'none', label: 'Never' },
       ],
-      privacy.referrerPolicy,
+      current.privacy.referrerPolicy,
       (value) =>
-        patch({
-          privacy: { ...current.privacy, referrerPolicy: value as Settings['privacy']['referrerPolicy'] },
-        }),
+        privacyPatch({ referrerPolicy: value as Settings['privacy']['referrerPolicy'] }),
     ),
     toggleRow(
-      'Fuso orario UTC',
-      'Espone UTC invece del fuso locale, che è un identificatore. Richiede il riavvio.',
-      privacy.spoofTimezone,
-      (value) => patch({ privacy: { ...current.privacy, spoofTimezone: value } }),
+      'UTC timezone',
+      'Expose UTC instead of the local zone, which is an identifier. Restart required.',
+      current.privacy.spoofTimezone,
+      (value) => privacyPatch({ spoofTimezone: value }),
     ),
     toggleRow(
       'DNS over HTTPS',
-      'Cloudflare DoH. Richiede il riavvio del browser.',
-      privacy.dnsOverHttps,
-      (value) => patch({ privacy: { ...current.privacy, dnsOverHttps: value } }),
+      'Cloudflare DoH. Restart the browser to apply.',
+      current.privacy.dnsOverHttps,
+      (value) => privacyPatch({ dnsOverHttps: value }),
     ),
     toggleRow(
-      'Correttore ortografico',
-      'Electron scarica i dizionari da un CDN di Google: spento per impostazione predefinita.',
-      privacy.spellchecker,
-      (value) => patch({ privacy: { ...current.privacy, spellchecker: value } }),
+      'Spellchecker',
+      'Electron downloads dictionaries from a Google CDN, so this is off by default.',
+      current.privacy.spellchecker,
+      (value) => privacyPatch({ spellchecker: value }),
     ),
     toggleRow(
-      'Cancella i dati alla chiusura',
-      'Cookie, cache e archiviazione locale vengono eliminati quando esci.',
-      privacy.clearOnExit,
-      (value) => patch({ privacy: { ...current.privacy, clearOnExit: value } }),
+      'Clear data on exit',
+      'Cookies, cache and local storage are removed when you quit.',
+      current.privacy.clearOnExit,
+      (value) => privacyPatch({ clearOnExit: value }),
     ),
     inputRow(
-      'Lista di blocco remota',
-      'URL opzionale, un dominio per riga. Si somma alla lista integrata.',
-      privacy.remoteBlocklist,
+      'Remote blocklist',
+      'Optional URL, one domain per line. Added to the built-in list.',
+      current.privacy.remoteBlocklist,
       'https://example.com/trackers.txt',
-      (value) => patch({ privacy: { ...current.privacy, remoteBlocklist: value } }),
+      (value) => privacyPatch({ remoteBlocklist: value }),
       'url',
+    ),
+    toggleRow(
+      'Fake IP headers',
+      'Sends decoy X-Forwarded-For / Forwarded headers with a reserved address. It does not hide your real IP: servers still see the connection source. Off by default.',
+      current.privacy.fakeIpEnabled,
+      (value) => privacyPatch({ fakeIpEnabled: value }),
+    ),
+    inputRow(
+      'Fake address',
+      'Leave empty for a new reserved address per request. This is a decoy, not a proxy; some sites may reject or log it.',
+      current.privacy.fakeIpAddress,
+      '203.0.113.10',
+      (value) => privacyPatch({ fakeIpAddress: value }),
+    ),
+    el(
+      'div',
+      { class: 'row' },
+      el(
+        'div',
+        { class: 'label' },
+        el('strong', {}, 'How far these protections go'),
+        el('small', {}, 'The legal page lists what is guaranteed and what is not.'),
+      ),
+      el('a', { class: 'btn', href: 'lomesearch://legal' }, 'Legal'),
     ),
   ),
 );
 
-// ------------------------------------------------------------------- motore
+// ------------------------------------------------------------------- engine
 
-const engineCard = card('Motore di ricerca locale', 'Il processo che indicizza e risponde alle query.');
+const engineCard = card('Local search engine', 'The process that indexes and answers queries.');
 main.append(engineCard);
 
 let engineStatus: EngineStatus | null = null;
@@ -218,45 +270,45 @@ let engineStatus: EngineStatus | null = null;
 function renderEngine(): void {
   engineCard.textContent = '';
   engineCard.append(
-    el('h2', {}, 'Motore di ricerca locale'),
-    el('p', { class: 'hint' }, 'Il processo che indicizza e risponde alle query.'),
+    el('h2', {}, 'Local search engine'),
+    el('p', { class: 'hint' }, 'The process that indexes and answers queries.'),
     el(
       'div',
       { class: 'row' },
       el(
         'div',
         { class: 'label' },
-        el('strong', {}, engineStatus?.running ? 'In esecuzione' : 'Fermo'),
+        el('strong', {}, engineStatus?.running ? 'Running' : 'Stopped'),
         el(
           'small',
           {},
           engineStatus?.running
-            ? `${engineStatus.origin} · ${engineStatus.documents.toLocaleString('it-IT')} documenti · ${engineStatus.indexedTerms.toLocaleString('it-IT')} termini`
-            : engineStatus?.error ?? 'Avvia il motore per usare l’indice locale.',
+            ? `${engineStatus.origin} · ${engineStatus.documents.toLocaleString('en-US')} documents · ${engineStatus.indexedTerms.toLocaleString('en-US')} terms`
+            : engineStatus?.error ?? 'Start the engine to use the local index.',
         ),
       ),
       el(
         'span',
         { class: `pill ${engineStatus?.running ? '' : 'warn'}` },
         el('span', { class: `dot ${engineStatus?.running ? 'on' : 'off'}` }),
-        engineStatus?.running ? 'attivo' : 'fermo',
+        engineStatus?.running ? 'active' : 'stopped',
       ),
     ),
     toggleRow(
-      'Avvia con il browser',
-      'Se disattivato, LomeSearch si collega a un motore già in esecuzione.',
+      'Start with the browser',
+      'When off, LomeSearch connects to an engine that is already running.',
       current.engine.autoStart,
       (value) => patch({ engine: { ...current.engine, autoStart: value } }),
     ),
     inputRow(
-      'Porta',
-      'Porta locale del server di ricerca (default 7717).',
+      'Port',
+      'Local port of the search server (default 7717).',
       String(current.engine.port),
       '7717',
       async (value) => {
         const port = Number.parseInt(value, 10);
         if (!Number.isFinite(port) || port < 1 || port > 65535) {
-          toast('Porta non valida');
+          toast('Invalid port');
           return;
         }
         await patch({ engine: { ...current.engine, port } });
@@ -266,8 +318,8 @@ function renderEngine(): void {
       'number',
     ),
     inputRow(
-      'Cartella dati',
-      'Dove vivono indice, documenti e chiave IndexNow.',
+      'Data folder',
+      'Where the index, documents and IndexNow key live.',
       current.engine.dataDir,
       '',
       (value) => patch({ engine: { ...current.engine, dataDir: value } }),
@@ -278,18 +330,18 @@ function renderEngine(): void {
       el(
         'div',
         { class: 'label' },
-        el('strong', {}, 'Azioni'),
-        el('small', {}, 'Riavvia il motore o apri la cartella dei dati.'),
+        el('strong', {}, 'Actions'),
+        el('small', {}, 'Restart the engine or open the data folder.'),
       ),
       el(
         'div',
         { style: 'display:flex;gap:8px' },
-        button('Riavvia', async () => {
+        button('Restart', async () => {
           engineStatus = await lome.engine.restart();
           renderEngine();
-          toast('Motore riavviato');
+          toast('Engine restarted');
         }),
-        button('Apri cartella', () => lome.app.openDataDir(), 'small'),
+        button('Open folder', () => lome.app.openDataDir(), 'small'),
       ),
     ),
   );
@@ -304,27 +356,27 @@ lome.onEngine((status) => {
   renderEngine();
 });
 
-// ---------------------------------------------------------------- cronologia
+// ------------------------------------------------------------------ history
 
 main.append(
   card(
-    'Cronologia',
-    'Registrata solo in locale, mai inviata altrove.',
+    'History',
+    'Stored locally, never sent anywhere.',
     toggleRow(
-      'Registra la cronologia',
-      'Se disattivato, le nuove visite non vengono salvate.',
+      'Record history',
+      'When off, new visits are not saved.',
       current.history.enabled,
       (value) => patch({ history: { ...current.history, enabled: value } }),
     ),
     selectRow(
-      'Conservazione',
-      'Le voci più vecchie vengono rimosse automaticamente.',
+      'Retention',
+      'Older entries are removed automatically.',
       [
-        { value: '7', label: '7 giorni' },
-        { value: '30', label: '30 giorni' },
-        { value: '90', label: '90 giorni' },
-        { value: '365', label: '1 anno' },
-        { value: '0', label: 'Per sempre' },
+        { value: '7', label: '7 days' },
+        { value: '30', label: '30 days' },
+        { value: '90', label: '90 days' },
+        { value: '365', label: '1 year' },
+        { value: '0', label: 'Forever' },
       ],
       String(current.history.retentionDays),
       (value) => patch({ history: { ...current.history, retentionDays: Number(value) } }),
@@ -336,17 +388,17 @@ main.append(
 
 main.append(
   card(
-    'Download',
+    'Downloads',
     null,
     toggleRow(
-      'Chiedi dove salvare',
-      'Se disattivato, i file vanno nella cartella indicata.',
+      'Ask where to save',
+      'When off, files go to the folder below.',
       current.downloads.askWhereToSave,
       (value) => patch({ downloads: { ...current.downloads, askWhereToSave: value } }),
     ),
     inputRow(
-      'Cartella dei download',
-      'Percorso assoluto sul computer.',
+      'Download folder',
+      'Absolute path on this computer.',
       current.downloads.directory,
       '',
       (value) => patch({ downloads: { ...current.downloads, directory: value } }),
@@ -354,15 +406,15 @@ main.append(
   ),
 );
 
-// --------------------------------------------------------------- estensioni
+// --------------------------------------------------------------- extensions
 
 main.append(
   card(
-    'Estensioni',
-    'Le estensioni Chrome supportate vengono caricate da una cartella locale.',
+    'Extensions',
+    'Supported Chrome extensions are loaded from a local folder.',
     toggleRow(
-      'Abilita le estensioni',
-      'La modifica ha effetto al prossimo avvio.',
+      'Enable extensions',
+      'The change takes effect on the next start.',
       current.extensions.enabled,
       (value) => patch({ extensions: { ...current.extensions, enabled: value } }),
     ),
@@ -372,32 +424,32 @@ main.append(
       el(
         'div',
         { class: 'label' },
-        el('strong', {}, 'Gestisci estensioni'),
-        el('small', {}, 'Carica una cartella non pacchettizzata o rimuovi quelle esistenti.'),
+        el('strong', {}, 'Manage extensions'),
+        el('small', {}, 'Load an unpacked folder or remove the ones already loaded.'),
       ),
-      el('a', { class: 'btn', href: 'lomesearch://extensions' }, 'Apri'),
+      el('a', { class: 'btn', href: 'lomesearch://extensions' }, 'Open'),
     ),
   ),
 );
 
-// --------------------------------------------------------------------- dati
+// -------------------------------------------------------------- local data
 
 main.append(
   card(
-    'Dati locali',
-    'Nessun dato viene sincronizzato o inviato a server esterni.',
+    'Local data',
+    'Nothing is synchronised or sent to external servers.',
     el(
       'div',
       { class: 'row' },
       el(
         'div',
         { class: 'label' },
-        el('strong', {}, 'Cancella cookie e cache'),
-        el('small', {}, 'Chiude tutte le sessioni dei siti.'),
+        el('strong', {}, 'Clear cookies and cache'),
+        el('small', {}, 'Closes every site session.'),
       ),
-      button('Cancella', async () => {
+      button('Clear', async () => {
         await lome.app.clearData({ cookies: true, cache: true, localStorage: true });
-        toast('Cookie e cache cancellati');
+        toast('Cookies and cache cleared');
       }, 'danger'),
     ),
     el(
@@ -406,12 +458,12 @@ main.append(
       el(
         'div',
         { class: 'label' },
-        el('strong', {}, 'Cancella la cronologia'),
-        el('small', {}, 'Rimuove tutte le voci salvate.'),
+        el('strong', {}, 'Clear history'),
+        el('small', {}, 'Removes every saved entry.'),
       ),
-      button('Cancella', async () => {
+      button('Clear', async () => {
         await lome.history.clear();
-        toast('Cronologia cancellata');
+        toast('History cleared');
       }, 'danger'),
     ),
   ),

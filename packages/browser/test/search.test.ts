@@ -10,7 +10,7 @@ import {
   resolveInput,
   searchSuggestions,
 } from '../src/main/search.js';
-import { defaultSettings } from '../src/shared/constants.js';
+import { defaultSettings, INTERNAL_PAGES, PAGE_TITLES } from '../src/shared/constants.js';
 import type { EngineStatus } from '../src/shared/types.js';
 
 const status: EngineStatus = {
@@ -49,6 +49,15 @@ test('normalizeUserUrl applies the right default scheme', () => {
   assert.equal(normalizeUserUrl('lome:/settings/'), 'lomesearch://settings');
   assert.equal(normalizeUserUrl('lome:'), 'lomesearch://newtab');
   assert.equal(normalizeUserUrl('due parole'), null);
+});
+
+test('every internal page has a title and an error page can be opened', () => {
+  for (const page of INTERNAL_PAGES) assert.ok(PAGE_TITLES[page], `missing title for ${page}`);
+  assert.ok(INTERNAL_PAGES.includes('error'));
+  assert.deepEqual(resolveInput('lome:error', settings, status), {
+    kind: 'internal',
+    url: 'lomesearch://error',
+  });
 });
 
 test('resolveInput separates searches, addresses and internal pages', () => {
@@ -100,7 +109,7 @@ test('displayUrl keeps the port and shortens internal pages', () => {
 test('isInternalUrl and engineName cover every engine', () => {
   assert.equal(isInternalUrl('lomesearch://newtab'), true);
   assert.equal(isInternalUrl('https://example.com'), false);
-  assert.equal(engineName(settings), 'LomeSearch locale');
+  assert.equal(engineName(settings), 'local LomeSearch');
   assert.equal(engineName({ ...settings, searchEngine: 'duckduckgo' }), 'DuckDuckGo');
-  assert.equal(engineName({ ...settings, searchEngine: 'custom' }), 'motore personalizzato');
+  assert.equal(engineName({ ...settings, searchEngine: 'custom' }), 'custom engine');
 });

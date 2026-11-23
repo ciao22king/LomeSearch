@@ -48,7 +48,7 @@ function percentile(sorted: number[], fraction: number): number {
 
 async function main(): Promise<void> {
   const dir = mkdtempSync(join(tmpdir(), 'lomesearch-bench-'));
-  process.stdout.write(`corpus: ${DOCUMENTS} documenti, ${WORDS_PER_DOC} parole ciascuno\n`);
+  process.stdout.write(`corpus: ${DOCUMENTS} documents, ${WORDS_PER_DOC} words each\n`);
   const index = SearchIndex.open(dir, { flushThreshold: 512, mergeFactor: 6 });
 
   const indexingStarted = performance.now();
@@ -101,14 +101,14 @@ async function main(): Promise<void> {
   latencies.sort((a, b) => a - b);
   process.stdout.write(
     [
-      `indicizzazione   ${(DOCUMENTS / (indexingMs / 1000)).toFixed(0)} doc/s (${indexingMs.toFixed(0)} ms)`,
+      `indexing         ${(DOCUMENTS / (indexingMs / 1000)).toFixed(0)} docs/s (${indexingMs.toFixed(0)} ms)`,
       `query            ${(QUERIES / (searchMs / 1000)).toFixed(0)} q/s`,
-      `latenza          p50 ${percentile(latencies, 0.5).toFixed(2)} ms, p95 ${percentile(latencies, 0.95).toFixed(2)} ms, p99 ${percentile(latencies, 0.99).toFixed(2)} ms`,
-      `risultati medi   ${(hits / QUERIES).toFixed(1)}`,
-      `ottimizzazione   ${optimizeMs.toFixed(0)} ms`,
-      `segmenti         ${stats.segments} (${(segmentBytes / 1024 / 1024).toFixed(1)} MiB)`,
-      `documenti        ${(documentBytes / 1024 / 1024).toFixed(1)} MiB su disco`,
-      `termini          ${stats.indexedTerms}`,
+      `latency          p50 ${percentile(latencies, 0.5).toFixed(2)} ms, p95 ${percentile(latencies, 0.95).toFixed(2)} ms, p99 ${percentile(latencies, 0.99).toFixed(2)} ms`,
+      `average results  ${(hits / QUERIES).toFixed(1)}`,
+      `optimize         ${optimizeMs.toFixed(0)} ms`,
+      `segments         ${stats.segments} (${(segmentBytes / 1024 / 1024).toFixed(1)} MiB)`,
+      `documents        ${(documentBytes / 1024 / 1024).toFixed(1)} MiB on disk`,
+      `terms            ${stats.indexedTerms}`,
     ].join('\n') + '\n',
   );
 }

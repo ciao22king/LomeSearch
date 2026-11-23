@@ -42,7 +42,7 @@ engine and rebuilds the parts around it:
 npm install
 npm run build        # engine (tsc) + browser (esbuild bundles)
 npm run browser      # build again if needed, then launch Electron
-npm test             # 49 engine tests + 42 browser tests
+npm test             # engine + browser test suites
 ```
 
 The browser starts its own engine on `127.0.0.1:7717` and opens a new tab. The
@@ -145,11 +145,11 @@ Search JSON shape:
     {
       "url": "https://example.com/privacy",
       "title": "Privacy",
-      "description": "Come LomeSearch protegge la navigazione",
+      "description": "How LomeSearch protects browsing",
       "snippet": "…",
       "site": "example.com",
       "host": "example.com",
-      "lang": "it",
+      "lang": "en",
       "fetchedAt": 1795445439556,
       "score": 4.12,
       "matchedTerms": ["privacy"]
@@ -188,13 +188,17 @@ participant, so the same CLI can push a site to Bing, Yandex or this engine.
 
 ### Features
 
-- Tabs with drag-to-reorder, middle-click close, `Ctrl+T` / `Ctrl+W`, and session
-  restore.
+- Vertical tab sidebar with a live preview of every page, drag-to-reorder,
+  middle-click close, `Ctrl+T` / `Ctrl+W`, and session restore.
+- Tab freezing: idle background tabs release their renderer after a configurable
+  delay (default 20 minutes), keep title, URL, favicon and scroll offset, and
+  reload when selected again. The sidebar shows a `Frozen` badge and a
+  `Freeze idle` button freezes everything except the current tab.
 - Omnibox with local index suggestions, history suggestions and URL detection;
   `lome:` opens internal pages (`lome:settings`, `lome:history`, …).
 - Internal pages: new tab, history, bookmarks, downloads, extensions, privacy
-  report, settings, about, error page. All are local documents served by the
-  browser itself.
+  report, settings, legal, about, error page. All are local documents served by
+  the browser itself, and the interface is in English.
 - Private windows: separate in-memory session, no history, no downloads record,
   extensions disabled.
 - Find in page, zoom, print, full screen, developer tools, view source.
@@ -204,10 +208,17 @@ participant, so the same CLI can push a site to Bing, Yandex or this engine.
 - Download manager with progress, pause/cancel, open/show, and a persistent list.
 - Permission prompts per origin (notifications, geolocation, media, clipboard,
   full screen, MIDI), with remembered decisions.
-- Privacy shield with per-tab and per-domain counters, a blocklist of 132 rules,
-  optional remote blocklist, third-party cookie and storage stripping,
-  Do Not Track / Global Privacy Control headers, client-hint reduction, and
-  HTTPS-first with a per-tab fallback.
+- Privacy shield with per-tab and per-domain counters, a built-in blocklist of
+  214 rules (117 tracker domains, 82 ad networks, 15 path patterns), optional
+  remote blocklist, third-party cookie and storage stripping, Do Not Track /
+  Global Privacy Control headers, client-hint reduction, and HTTPS-first with a
+  per-tab fallback.
+- Integrated ad blocking: the ad networks are a list of their own, and a
+  conservative cosmetic CSS list hides common ad containers at document start.
+- Decoy IP headers: optional `X-Forwarded-For`, `X-Real-IP`, `Client-IP` and
+  `Forwarded` headers with a reserved documentation address. Off by default; it
+  is a decoy for servers that trust those headers, not a proxy, and it never
+  hides the real source address.
 - Search engine choice: local index (default), DuckDuckGo, Brave Search,
   Startpage, or a custom `%s` template.
 
@@ -264,9 +275,15 @@ database and no background upload.
     "blockThirdPartyCookies": true,
     "httpsFirst": true,
     "sendDoNotTrack": true,
+    "blockAds": true,
+    "cosmeticFiltering": true,
     "fingerprintProtection": true,
+    "fakeIpEnabled": false,
+    "fakeIpAddress": "",
     "remoteBlocklist": ""
   },
+  "appearance": { "tabPreviews": true },
+  "performance": { "freezeAfterMinutes": 20 },
   "engine": {
     "autoStart": true,
     "port": 7717,
@@ -280,9 +297,19 @@ database and no background upload.
 ```
 
 `engine.executable` lets the browser supervise an engine binary other than the
-bundled `packages/engine/dist/src/cli.js`. `privacy.remoteBlocklist` accepts a
+bundled `packages/engine/dist/src/cli.js`. `performance.freezeAfterMinutes: 0`
+disables freezing; `appearance.tabPreviews: false` stops the thumbnails. `privacy.remoteBlocklist` accepts a
 hosts-file style list or plain domains, downloaded at start and refreshed when
 the setting changes.
+
+## Legal
+
+LomeSearch is a personal, non-commercial project: it is not a company, employer
+or office product and it comes with no support contract. It is licensed under
+the Apache License 2.0, provided without warranty, and the legal page in the
+browser (`lome:legal`) explains the acceptable use, the third-party components
+and the limits of the fake-IP feature. See `docs/legal.md` for the same text in
+the repository.
 
 ## Repository layout
 

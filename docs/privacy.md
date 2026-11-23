@@ -47,9 +47,9 @@ This document describes what is protected, what is not, and where data lives.
 
 Applied in `webRequest.onBeforeRequest` before a connection is opened.
 
-- 132 curated rules: 117 tracker hosts plus 15 path patterns, including
-  advertising, analytics, session replay, social widgets and fingerprinting
-  endpoints.
+- 214 curated rules: 117 tracker hosts, 82 ad-network hosts and 15 path
+  patterns, including advertising, analytics, session replay, social widgets and
+  fingerprinting endpoints. Ads and trackers can be switched independently.
 - Host rules match the host and its subdomains.
 - Path patterns apply to first-party requests too (for example, a first-party
   analytics beacon).

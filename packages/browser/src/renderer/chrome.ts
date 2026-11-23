@@ -22,6 +22,7 @@ const ICONS = {
   bookmark: '<svg viewBox="0 0 24 24"><path d="M7 4h10v16l-5-3.5L7 20z"/></svg>',
   globe: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M4.5 12h15M12 4c2.2 2.3 3.3 5 3.3 8S14.2 17.7 12 20c-2.2-2.3-3.3-5-3.3-8S9.8 6.3 12 4z"/></svg>',
   speaker: '<svg viewBox="0 0 24 24"><path d="M5 10v4h3l4 3V7L8 10z"/><path d="M16 9.5a3.5 3.5 0 0 1 0 5"/></svg>',
+  freeze: '<svg viewBox="0 0 24 24"><path d="M12 3v18M5 7l14 10M19 7L5 17"/></svg>',
   muted: '<svg viewBox="0 0 24 24"><path d="M5 10v4h3l4 3V7L8 10z"/><path d="M16 10l4 4M20 10l-4 4"/></svg>',
   lock: '<svg viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>',
   info: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 11v5M12 8h.01"/></svg>',
@@ -52,6 +53,8 @@ const downloadsPanel = $<HTMLDivElement>('#downloads-panel');
 const shieldPanel = $<HTMLDivElement>('#shield-panel');
 const toastEl = $<HTMLDivElement>('#toast');
 const privateBadge = $<HTMLSpanElement>('#private-badge');
+const tabSummary = $<HTMLSpanElement>('#tab-summary');
+const freezeIdleEl = $<HTMLButtonElement>('#freeze-idle');
 
 let state: ChromeState | null = null;
 let settings: Settings | null = null;
@@ -63,6 +66,7 @@ let suggestTimer: number | null = null;
 let findTimer: number | null = null;
 let toastTimer: number | null = null;
 let findQuery = '';
+const previews = new Map<number, string>();
 
 // --------------------------------------------------------------------- theme
 
@@ -96,6 +100,9 @@ function activeTab(): TabState | null {
 function render(next: ChromeState): void {
   const previousActive = state?.activeTabId ?? null;
   state = next;
+  for (const id of [...previews.keys()]) {
+    if (!next.tabs.some((tab) => tab.id === id)) previews.delete(id);
+  }
   privateBadge.hidden = !next.window.isPrivate;
   document.body.classList.toggle('private', next.window.isPrivate);
   renderTabs();
@@ -116,26 +123,55 @@ function renderTabs(): void {
       tab.favicon,
       tab.loading,
       tab.audible,
+      tab.frozen,
+      tab.hasPreview,
       tab.id === state?.activeTabId,
     ]),
   );
+  renderTabSummary();
   if (signature === tabSignature) return;
   tabSignature = signature;
   tabsEl.textContent = '';
 
   for (const tab of state.tabs) {
     const el = document.createElement('div');
-    el.className = `tab${tab.id === state.activeTabId ? ' active' : ''}`;
+    el.className = `tab${tab.id === state.activeTabId ? ' active' : ''}${tab.frozen ? ' frozen' : ''}`;
     el.dataset.id = String(tab.id);
     el.draggable = true;
     el.setAttribute('role', 'tab');
     el.setAttribute('aria-selected', String(tab.id === state.activeTabId));
     el.title = tab.title ? `${tab.title}\n${tab.url}` : tab.url;
 
+    const thumb = document.createElement('div');
+    thumb.className = 'tab-thumb';
+    const preview = previews.get(tab.id);
+    if (preview) {
+      const image = document.createElement('img');
+      image.src = preview;
+      image.alt = '';
+      image.draggable = false;
+      thumb.append(image);
+    } else {
+      const blank = document.createElement('div');
+      blank.className = 'tab-thumb-empty';
+      blank.textContent = (tab.title || hostOf(tab.url) || 'New tab').slice(0, 42);
+      thumb.append(blank);
+    }
+    if (tab.frozen) {
+      const frozen = document.createElement('span');
+      frozen.className = 'frozen-badge';
+      frozen.textContent = 'Frozen';
+      thumb.append(frozen);
+    }
+    el.append(thumb);
+
+    const row = document.createElement('div');
+    row.className = 'tab-row';
+
     if (tab.loading) {
       const spinner = document.createElement('span');
       spinner.className = 'spinner';
-      el.append(spinner);
+      row.append(spinner);
     } else if (tab.favicon) {
       const image = document.createElement('img');
       image.className = 'tab-favicon';
@@ -144,33 +180,48 @@ function renderTabs(): void {
       image.addEventListener('error', () => {
         image.replaceWith(fallbackIcon(tab.title));
       });
-      el.append(image);
+      row.append(image);
     } else {
-      el.append(fallbackIcon(tab.title));
+      row.append(fallbackIcon(tab.title));
     }
 
     const title = document.createElement('span');
     title.className = 'tab-title';
-    title.textContent = tab.title || 'Nuova scheda';
-    el.append(title);
+    title.textContent = tab.title || hostOf(tab.url) || 'New tab';
+    row.append(title);
 
     if (tab.audible) {
       const audio = document.createElement('span');
       audio.className = 'tab-audio';
       audio.innerHTML = tab.muted ? ICONS.muted : ICONS.speaker;
-      el.append(audio);
+      row.append(audio);
+    }
+
+    if (!tab.frozen && tab.id !== state.activeTabId) {
+      const freeze = document.createElement('button');
+      freeze.className = 'tab-action';
+      freeze.title = 'Freeze this tab';
+      freeze.setAttribute('aria-label', 'Freeze this tab');
+      freeze.innerHTML = ICONS.freeze;
+      freeze.addEventListener('click', (event) => {
+        event.stopPropagation();
+        void api.freezeTab(tab.id);
+      });
+      row.append(freeze);
     }
 
     const close = document.createElement('button');
     close.className = 'tab-close';
-    close.title = 'Chiudi scheda';
-    close.setAttribute('aria-label', 'Chiudi scheda');
+    close.title = 'Close tab';
+    close.setAttribute('aria-label', 'Close tab');
     close.innerHTML = ICONS.close;
     close.addEventListener('click', (event) => {
       event.stopPropagation();
       void api.closeTab(tab.id);
     });
-    el.append(close);
+    row.append(close);
+
+    el.append(row);
 
     el.addEventListener('mousedown', (event) => {
       if (event.button === 0) void api.selectTab(tab.id);
@@ -192,7 +243,7 @@ function renderTabs(): void {
     el.addEventListener('dragover', (event) => {
       event.preventDefault();
       const rect = el.getBoundingClientRect();
-      const after = event.clientX > rect.left + rect.width / 2;
+      const after = event.clientY > rect.top + rect.height / 2;
       for (const other of tabsEl.children) other.classList.remove('drop-before', 'drop-after');
       el.classList.add(after ? 'drop-after' : 'drop-before');
     });
@@ -201,7 +252,7 @@ function renderTabs(): void {
       const draggedId = Number(event.dataTransfer?.getData('text/plain'));
       if (!Number.isFinite(draggedId) || !state) return;
       const rect = el.getBoundingClientRect();
-      const after = event.clientX > rect.left + rect.width / 2;
+      const after = event.clientY > rect.top + rect.height / 2;
       const currentIndex = state.tabs.findIndex((item) => item.id === draggedId);
       let target = state.tabs.findIndex((item) => item.id === tab.id) + (after ? 1 : 0);
       if (currentIndex !== -1 && currentIndex < target) target -= 1;
@@ -209,6 +260,23 @@ function renderTabs(): void {
     });
 
     tabsEl.append(el);
+  }
+}
+
+function renderTabSummary(): void {
+  if (!state) return;
+  const frozen = state.tabs.filter((tab) => tab.frozen).length;
+  const total = state.tabs.length;
+  tabSummary.textContent = frozen > 0 ? `${total} tabs · ${frozen} frozen` : `${total} ${total === 1 ? 'tab' : 'tabs'}`;
+  freezeIdleEl.disabled = state.tabs.filter((tab) => !tab.frozen && tab.id !== state?.activeTabId).length === 0;
+}
+
+function hostOf(url: string): string {
+  try {
+    const parsed = new URL(url);
+    return parsed.hostname.replace(/^www\./, '');
+  } catch {
+    return '';
   }
 }
 
@@ -223,28 +291,28 @@ function renderToolbar(): void {
   const tab = activeTab();
   backEl.disabled = !tab?.canGoBack;
   forwardEl.disabled = !tab?.canGoForward;
-  reloadEl.title = tab?.loading ? 'Interrompi (Esc)' : 'Ricarica (Ctrl+R)';
+  reloadEl.title = tab?.loading ? 'Stop (Esc)' : 'Reload (Ctrl+R)';
   reloadEl.innerHTML = tab?.loading ? ICONS.close : '<svg viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.34-5.66"/><path d="M20 4v5h-5"/></svg>';
   starEl.classList.toggle('on', state?.bookmarked === true);
-  starEl.title = state?.bookmarked ? 'Rimuovi dai preferiti (Ctrl+D)' : 'Aggiungi ai preferiti (Ctrl+D)';
+  starEl.title = state?.bookmarked ? 'Remove bookmark (Ctrl+D)' : 'Bookmark this page (Ctrl+D)';
 
   const url = tab?.url ?? '';
   if (url.startsWith('https://')) {
     securityEl.innerHTML = ICONS.lock;
     securityEl.classList.remove('insecure');
-    securityEl.title = 'Connessione cifrata';
+    securityEl.title = 'Encrypted connection';
   } else if (url.startsWith('http://')) {
     securityEl.innerHTML = ICONS.info;
     securityEl.classList.add('insecure');
-    securityEl.title = 'Connessione non cifrata';
+    securityEl.title = 'Unencrypted connection';
   } else if (url.startsWith('lomesearch://')) {
     securityEl.innerHTML = ICONS.shield;
     securityEl.classList.remove('insecure');
-    securityEl.title = 'Pagina interna di LomeSearch';
+    securityEl.title = 'LomeSearch internal page';
   } else {
     securityEl.innerHTML = ICONS.info;
     securityEl.classList.remove('insecure');
-    securityEl.title = 'Nuova scheda';
+    securityEl.title = 'New tab';
   }
 }
 
@@ -438,23 +506,25 @@ interface MenuEntry {
 }
 
 const MENU: MenuEntry[] = [
-  { label: 'Nuova scheda', shortcut: 'Ctrl+T', action: 'new-tab' },
-  { label: 'Nuova finestra', shortcut: 'Ctrl+N', action: 'new-window' },
-  { label: 'Finestra privata', shortcut: 'Ctrl+Shift+N', action: 'private-window' },
+  { label: 'New tab', shortcut: 'Ctrl+T', action: 'new-tab' },
+  { label: 'New window', shortcut: 'Ctrl+N', action: 'new-window' },
+  { label: 'Private window', shortcut: 'Ctrl+Shift+N', action: 'private-window' },
   { label: '', separator: true },
-  { label: 'Cronologia', shortcut: 'Ctrl+H', page: 'history' },
-  { label: 'Preferiti', shortcut: 'Ctrl+Shift+O', page: 'bookmarks' },
-  { label: 'Download', shortcut: 'Ctrl+J', page: 'downloads' },
-  { label: 'Estensioni', page: 'extensions' },
+  { label: 'History', shortcut: 'Ctrl+H', page: 'history' },
+  { label: 'Bookmarks', shortcut: 'Ctrl+Shift+O', page: 'bookmarks' },
+  { label: 'Downloads', shortcut: 'Ctrl+J', page: 'downloads' },
+  { label: 'Extensions', page: 'extensions' },
+  { label: 'Freeze idle tabs', action: 'freeze-inactive' },
   { label: '', separator: true },
-  { label: 'Trova nella pagina', shortcut: 'Ctrl+F', action: 'find' },
-  { label: 'Stampa', shortcut: 'Ctrl+P', action: 'print' },
-  { label: 'Strumenti per sviluppatori', shortcut: 'Ctrl+Shift+I', action: 'devtools' },
-  { label: 'Zoom 100%', shortcut: 'Ctrl+0', action: 'zoom-reset' },
+  { label: 'Find in page', shortcut: 'Ctrl+F', action: 'find' },
+  { label: 'Print', shortcut: 'Ctrl+P', action: 'print' },
+  { label: 'Developer tools', shortcut: 'Ctrl+Shift+I', action: 'devtools' },
+  { label: 'Actual size', shortcut: 'Ctrl+0', action: 'zoom-reset' },
   { label: '', separator: true },
-  { label: 'Privacy e dati locali', page: 'privacy' },
-  { label: 'Impostazioni', shortcut: 'Ctrl+,', page: 'settings' },
-  { label: 'Informazioni su LomeSearch', page: 'about' },
+  { label: 'Privacy and local data', page: 'privacy' },
+  { label: 'Legal and licenses', page: 'legal' },
+  { label: 'Settings', shortcut: 'Ctrl+,', page: 'settings' },
+  { label: 'About LomeSearch', page: 'about' },
 ];
 
 function renderMenu(): void {
@@ -465,8 +535,8 @@ function renderMenu(): void {
   dot.className = `dot ${state?.engine.running ? 'on' : 'off'}`;
   const text = document.createElement('span');
   text.textContent = state?.engine.running
-    ? `Motore attivo · ${state.engine.documents.toLocaleString('it-IT')} documenti`
-    : state?.engine.error ?? 'Motore non attivo';
+    ? `Engine running · ${state.engine.documents.toLocaleString('en-US')} documents`
+    : state?.engine.error ?? 'Engine not running';
   status.append(dot, text);
   menuPanel.append(status);
 
@@ -512,7 +582,7 @@ function renderDownloadsPanel(): void {
   if (items.length === 0) {
     const empty = document.createElement('div');
     empty.className = 'panel-empty';
-    empty.textContent = 'Nessun download recente.';
+    empty.textContent = 'No recent downloads.';
     downloadsPanel.append(empty);
     return;
   }
@@ -549,7 +619,7 @@ function renderDownloadsPanel(): void {
   const footer = document.createElement('div');
   footer.className = 'panel-footer';
   const button = document.createElement('button');
-  button.textContent = 'Tutti i download';
+  button.textContent = 'All downloads';
   button.addEventListener('click', () => {
     closePanels();
     void api.openPage('downloads');
@@ -559,10 +629,10 @@ function renderDownloadsPanel(): void {
 }
 
 function downloadLabel(item: DownloadState): string {
-  if (item.state === 'progressing') return 'In corso';
-  if (item.state === 'completed') return 'Completato';
-  if (item.state === 'cancelled') return 'Annullato';
-  return 'Interrotto';
+  if (item.state === 'progressing') return 'Downloading';
+  if (item.state === 'completed') return 'Completed';
+  if (item.state === 'cancelled') return 'Cancelled';
+  return 'Interrupted';
 }
 
 // ------------------------------------------------------------------- shield
@@ -570,21 +640,21 @@ function downloadLabel(item: DownloadState): string {
 function renderShieldPanel(): void {
   shieldPanel.textContent = '';
   const title = document.createElement('h3');
-  title.textContent = 'Privacy di questa pagina';
+  title.textContent = 'Privacy for this page';
   const row = document.createElement('div');
   row.className = 'row';
   const big = document.createElement('span');
   big.className = 'big';
   big.textContent = String(activeTab()?.blocked ?? 0);
   const small = document.createElement('small');
-  small.textContent = 'richieste bloccate in questa scheda';
+  small.textContent = 'requests blocked in this tab';
   row.append(big, small);
   const total = document.createElement('p');
-  total.textContent = `Da quando LomeSearch è in esecuzione: ${state?.privacy.blockedSession ?? 0} bloccate. Totale storico: ${state?.privacy.blockedTotal ?? 0}.`;
+  total.textContent = `Since LomeSearch started: ${state?.privacy.blockedSession ?? 0} blocked. All time: ${state?.privacy.blockedTotal ?? 0}.`;
   const rules = document.createElement('p');
-  rules.textContent = `Lista integrata: ${state?.privacy.blocklistSize ?? 0} regole, cookie di terze parti e HTTPS-first attivi.`;
+  rules.textContent = `Built-in list: ${state?.privacy.blocklistSize ?? 0} rules, third-party cookies stripped, HTTPS-first on.`;
   const button = document.createElement('button');
-  button.textContent = 'Apri il report privacy';
+  button.textContent = 'Open the privacy report';
   button.addEventListener('click', () => {
     closePanels();
     void api.openPage('privacy');
@@ -660,7 +730,7 @@ $('#win-close').addEventListener('click', () => void api.close());
 
 starEl.addEventListener('click', async () => {
   const added = await api.toggleBookmark();
-  toast(added ? 'Aggiunto ai preferiti' : 'Rimosso dai preferiti');
+  toast(added ? 'Bookmark added' : 'Bookmark removed');
 });
 
 shieldEl.addEventListener('click', () => {
@@ -703,6 +773,15 @@ document.addEventListener('keydown', (event) => {
 });
 
 api.onState((next) => render(next));
+api.onPreview(({ id, data }) => {
+  previews.set(id, data);
+  tabSignature = '';
+  renderTabs();
+});
+freezeIdleEl.addEventListener('click', async () => {
+  const frozen = await api.freezeInactive();
+  toast(frozen > 0 ? `${frozen} tab${frozen === 1 ? '' : 's'} frozen` : 'Nothing to freeze');
+});
 api.onFindResult((result) => {
   findCountEl.textContent = `${result.activeMatch}/${result.matches}`;
 });

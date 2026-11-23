@@ -13,26 +13,26 @@ import {
   toast,
 } from './common.js';
 
-const { main } = await initPage('history', 'Cronologia');
+const { main } = await initPage('history', 'History');
 
 const search = el('input', {
   type: 'search',
-  placeholder: 'Filtra per titolo o indirizzo',
-  'aria-label': 'Filtra la cronologia',
+  placeholder: 'Filter by title or address',
+  'aria-label': 'Filter history',
 });
 const listCard = card(null, null);
 const countEl = el('p', { class: 'lede' });
 
 main.append(
-  heading('Cronologia', 'Tutte le pagine visitate, solo su questo computer.'),
+  heading('History', 'Every page you visited, only on this computer.'),
   el(
     'div',
     { style: 'display:flex;gap:10px;align-items:center;margin-bottom:18px' },
     search,
-    button('Cancella tutto', async () => {
-      if (!window.confirm('Cancellare l’intera cronologia?')) return;
+    button('Clear all', async () => {
+      if (!window.confirm('Clear the entire history?')) return;
       await lome.history.clear();
-      toast('Cronologia cancellata');
+      toast('History cleared');
       await render();
     }, 'danger'),
   ),
@@ -47,7 +47,7 @@ async function render(): Promise<void> {
   countEl.textContent =
     entries.length === 0
       ? ''
-      : `${entries.length.toLocaleString('it-IT')} ${entries.length === 1 ? 'voce' : 'voci'}${search.value.trim() ? ' corrispondenti' : ''}`;
+      : `${entries.length.toLocaleString('en-US')} ${entries.length === 1 ? 'entry' : 'entries'}${search.value.trim() ? ' matching' : ''}`;
   clear(listCard);
 
   if (entries.length === 0) {
@@ -55,10 +55,10 @@ async function render(): Promise<void> {
       el(
         'div',
         { class: 'empty' },
-        el('strong', {}, search.value.trim() ? 'Nessun risultato' : 'La cronologia è vuota'),
+        el('strong', {}, search.value.trim() ? 'No results' : 'History is empty'),
         search.value.trim()
-          ? 'Prova con un altro termine.'
-          : 'Le pagine che visiti compariranno qui.',
+          ? 'Try another term.'
+          : 'Pages you visit will appear here.',
       ),
     );
     return;
@@ -88,12 +88,12 @@ async function render(): Promise<void> {
           el('div', { class: 'title' }, entry.title || entry.url),
           el('div', { class: 'url' }, shorten(entry.url, 90)),
         ),
-        el('span', { class: 'when', title: new Date(entry.visitedAt).toLocaleString('it-IT') }, timeAgo(entry.visitedAt)),
+        el('span', { class: 'when', title: new Date(entry.visitedAt).toLocaleString('en-US') }, timeAgo(entry.visitedAt)),
         el(
           'div',
           { class: 'actions' },
-          button('Apri', () => lome.navigate(entry.url), 'small'),
-          button('Elimina', async () => {
+          button('Open', () => lome.navigate(entry.url), 'small'),
+          button('Delete', async () => {
             await lome.history.remove(entry.id);
             await render();
           }, 'small'),

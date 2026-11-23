@@ -1,7 +1,7 @@
 import { join } from 'node:path';
 import { BaseWindow, WebContentsView, app, dialog, type ContextMenuParams, type FoundInPageResult, type Session } from 'electron';
 import type { ChromeState } from '../shared/types.js';
-import { CHROME_HEIGHT } from '../shared/constants.js';
+import { CHROME_HEIGHT, SIDEBAR_WIDTH } from '../shared/constants.js';
 import { internalUrl, isInternalPage } from './internal-pages.js';
 import { resolveInput } from './search.js';
 import type { AppStore } from './store.js';
@@ -9,6 +9,7 @@ import type { EngineManager } from './engine.js';
 import type { PrivacyManager } from './privacy.js';
 import type { DownloadManager } from './downloads.js';
 import type { ExtensionManager } from './extensions.js';
+import { shouldFreeze } from '../shared/freeze.js';
 import { TabManager, type Tab } from './tabs.js';
 
 /**
@@ -54,6 +55,8 @@ export class BrowserWindowController {
   private overlay = false;
   private contentFullscreen = false;
   private stateTimer: NodeJS.Timeout | null = null;
+  private freezeTimer: NodeJS.Timeout | null = null;
+  private readonly previewTimers = new Map<number, NodeJS.Timeout>();
   private closed = false;
   private lastFind = '';
 
@@ -65,8 +68,8 @@ export class BrowserWindowController {
     this.window = new BaseWindow({
       width: options.width ?? 1240,
       height: options.height ?? 820,
-      minWidth: 560,
-      minHeight: 420,
+      minWidth: 720,
+      minHeight: 480,
       frame: false,
       show: false,
       title: 'LomeSearch',
@@ -85,7 +88,9 @@ export class BrowserWindowController {
     });
     this.chromeView.setBackgroundColor('#00000000');
     this.chromeView.webContents.on('will-navigate', (event) => event.preventDefault());
-    this.window.contentView.addChildView(this.chromeView);
+    // The chrome view fills the window and sits under the page: the sidebar and
+    // the toolbar are the parts the page does not cover.
+    this.window.contentView.addChildView(this.chromeView, 0);
     void this.chromeView.webContents.loadFile(join(app.getAppPath(), 'dist', 'renderer', 'chrome.html'));
 
     this.tabs = new TabManager(options.session, ctx.pagePreload, options.isPrivate, {
@@ -104,7 +109,10 @@ export class BrowserWindowController {
     const urls = options.urls && options.urls.length > 0 ? options.urls : [internalUrl('newtab')];
     const activeIndex = Math.max(0, Math.min(options.activeIndex ?? 0, urls.length - 1));
     urls.forEach((url, index) => {
-      this.tabs.create(url, { background: index !== activeIndex });
+      this.tabs.create(url, {
+        background: index !== activeIndex,
+        lazy: urls.length > 1 && index !== activeIndex,
+      });
     });
 
     this.window.on('resize', () => this.layout());
@@ -121,6 +129,9 @@ export class BrowserWindowController {
     this.window.on('closed', () => {
       this.closed = true;
       if (this.stateTimer) clearTimeout(this.stateTimer);
+      if (this.freezeTimer) clearInterval(this.freezeTimer);
+      for (const timer of this.previewTimers.values()) clearTimeout(timer);
+      this.previewTimers.clear();
       this.tabs.destroyAll();
       this.ctx.onClosed(this);
     });
@@ -132,6 +143,8 @@ export class BrowserWindowController {
 
     this.syncViews();
     this.layout();
+    this.freezeTimer = setInterval(() => void this.freezeIdle(), 30_000);
+    this.freezeTimer.unref?.();
   }
 
   // ------------------------------------------------------------------ layout
@@ -141,15 +154,16 @@ export class BrowserWindowController {
     const size = this.window.getContentSize();
     const width = size[0] ?? 800;
     const height = size[1] ?? 600;
-    const chromeHeight = this.contentFullscreen ? 0 : this.overlay ? height : CHROME_HEIGHT;
-    this.chromeView.setBounds({ x: 0, y: 0, width, height: chromeHeight });
+    this.chromeView.setBounds({ x: 0, y: 0, width, height });
     const active = this.tabs.active();
-    if (active) {
+    if (active?.view) {
+      const sidebar = this.contentFullscreen ? 0 : SIDEBAR_WIDTH;
+      const top = this.contentFullscreen ? 0 : CHROME_HEIGHT;
       active.view.setBounds({
-        x: 0,
-        y: this.contentFullscreen ? 0 : CHROME_HEIGHT,
-        width,
-        height: this.contentFullscreen ? height : Math.max(0, height - CHROME_HEIGHT),
+        x: sidebar,
+        y: top,
+        width: Math.max(0, width - sidebar),
+        height: Math.max(0, height - top),
       });
     }
   }
@@ -157,21 +171,32 @@ export class BrowserWindowController {
   private syncViews(): void {
     const active = this.tabs.active();
     for (const tab of this.tabs.all()) {
+      const view = tab.view;
+      if (!view) {
+        this.attached.delete(tab.id);
+        continue;
+      }
       if (tab === active) {
         if (!this.attached.has(tab.id)) {
-          this.window.contentView.addChildView(tab.view, 0);
+          this.window.contentView.addChildView(view);
           this.attached.add(tab.id);
         }
       } else if (this.attached.has(tab.id)) {
-        this.window.contentView.removeChildView(tab.view);
+        this.window.contentView.removeChildView(view);
         this.attached.delete(tab.id);
       }
     }
+    if (this.overlay) this.window.contentView.addChildView(this.chromeView);
   }
 
   setOverlay(open: boolean): void {
     if (this.overlay === open) return;
     this.overlay = open;
+    // Overlays live in the chrome view, so it has to sit above the page while a
+    // panel is open and below it otherwise.
+    this.window.contentView.removeChildView(this.chromeView);
+    if (open) this.window.contentView.addChildView(this.chromeView);
+    else this.window.contentView.addChildView(this.chromeView, 0);
     this.layout();
   }
 
@@ -196,7 +221,8 @@ export class BrowserWindowController {
     const active = this.tabs.active();
     return {
       tabs: this.tabs.all().map((tab) => {
-        tab.blocked = this.ctx.privacy.tabBlocked(tab.webContents.id);
+        const contents = tab.contents;
+        if (contents && !contents.isDestroyed()) tab.blocked = this.ctx.privacy.tabBlocked(contents.id);
         return tab.state();
       }),
       activeTabId: this.tabs.activeIdValue(),
@@ -229,21 +255,114 @@ export class BrowserWindowController {
   }
 
   closeTab(id: number): void {
+    const contentsId = this.tabs.get(id)?.contents?.id;
+    if (contentsId !== undefined) this.ctx.privacy.resetTab(contentsId);
+    const timer = this.previewTimers.get(id);
+    if (timer) {
+      clearTimeout(timer);
+      this.previewTimers.delete(id);
+    }
     this.tabs.close(id);
-    this.ctx.privacy.resetTab(id);
+    this.attached.delete(id);
     this.syncViews();
     this.layout();
     this.scheduleState();
     if (this.tabs.all().length === 0) this.window.close();
   }
 
-  selectTab(id: number): void {
+  async selectTab(id: number): Promise<void> {
+    const current = this.tabs.active();
+    if (current && current.id !== id) await this.capturePreview(current);
     this.tabs.select(id);
+    const tab = this.tabs.get(id);
+    tab?.thaw();
     this.syncViews();
     this.layout();
     this.scheduleState();
+    tab?.contents?.focus();
+  }
+
+  /** Destroys the renderer of an inactive tab and keeps its URL for later. */
+  async freezeTab(id: number): Promise<boolean> {
     const tab = this.tabs.get(id);
-    tab?.webContents.focus();
+    if (!tab || !tab.live || tab.id === this.tabs.activeIdValue()) return false;
+    // Background tabs are throttled and can leave these promises pending, so
+    // neither the scroll read nor the thumbnail may block the discard.
+    await withTimeout(tab.rememberScroll(), 800);
+    if (!tab.hasPreview) await withTimeout(this.capturePreview(tab), 1_200);
+    const view = tab.view;
+    if (!view) return false;
+    this.window.contentView.removeChildView(view);
+    this.attached.delete(tab.id);
+    tab.freeze();
+    this.scheduleState();
+    return true;
+  }
+
+  async freezeInactive(): Promise<number> {
+    let frozen = 0;
+    for (const tab of this.tabs.all()) {
+      if (tab.id === this.tabs.activeIdValue()) continue;
+      try {
+        if (await this.freezeTab(tab.id)) frozen++;
+      } catch {
+        // A tab that cannot be frozen stays alive; the rest still freeze.
+      }
+    }
+    return frozen;
+  }
+
+  private async freezeIdle(): Promise<void> {
+    const minutes = this.ctx.store.settings.value.performance.freezeAfterMinutes;
+    if (!Number.isFinite(minutes) || minutes <= 0) return;
+    const now = Date.now();
+    for (const tab of this.tabs.all()) {
+      const contents = tab.contents;
+      const candidate = {
+        id: tab.id,
+        frozen: tab.frozen,
+        live: tab.live && contents !== null && !contents.isDestroyed(),
+        loading: tab.loading,
+        audible: contents !== null && !contents.isDestroyed() && contents.isCurrentlyAudible(),
+        lastActive: tab.lastActive,
+      };
+      if (shouldFreeze(candidate, this.tabs.activeIdValue(), minutes, now)) {
+        await this.freezeTab(tab.id);
+      }
+    }
+  }
+
+  private schedulePreview(tab: Tab): void {
+    if (!this.ctx.store.settings.value.appearance.tabPreviews) return;
+    const existing = this.previewTimers.get(tab.id);
+    if (existing) clearTimeout(existing);
+    const timer = setTimeout(() => {
+      this.previewTimers.delete(tab.id);
+      if (tab === this.tabs.active() && !tab.loading) void this.capturePreview(tab);
+    }, 700);
+    this.previewTimers.set(tab.id, timer);
+  }
+
+  private async capturePreview(tab: Tab): Promise<void> {
+    if (!this.ctx.store.settings.value.appearance.tabPreviews) return;
+    const contents = tab.contents;
+    if (!contents || contents.isDestroyed()) return;
+    try {
+      const image = await withTimeout(contents.capturePage(), 2_000);
+      if (!image) return;
+      if (image.isEmpty()) return;
+      const data = image.resize({ width: 320 }).toJPEG(58).toString('base64');
+      tab.hasPreview = true;
+      if (!this.closed && !this.chromeView.webContents.isDestroyed()) {
+        this.chromeView.webContents.send('chrome:preview', {
+          id: tab.id,
+          data: `data:image/jpeg;base64,${data}`,
+        });
+      }
+      this.scheduleState();
+    } catch {
+      // A page that is mid-navigation may not be capturable; try again later.
+    }
   }
 
   moveTab(id: number, index: number): void {
@@ -262,39 +381,46 @@ export class BrowserWindowController {
   navigate(input: string): void {
     const tab = this.tabs.active();
     if (!tab) return;
+    tab.thaw();
     const resolution = resolveInput(input, this.ctx.store.settings.value, this.ctx.engine.getStatus());
     tab.load(resolution.url);
     tab.webContents.focus();
   }
 
   loadUrl(url: string): void {
-    this.tabs.active()?.load(url);
+    const tab = this.tabs.active();
+    tab?.thaw();
+    tab?.load(url);
   }
 
   back(): void {
     const tab = this.tabs.active();
-    if (tab?.webContents.navigationHistory.canGoBack()) tab.webContents.navigationHistory.goBack();
+    const contents = tab?.contents;
+    if (contents?.navigationHistory.canGoBack()) contents.navigationHistory.goBack();
   }
 
   forward(): void {
     const tab = this.tabs.active();
-    if (tab?.webContents.navigationHistory.canGoForward()) tab.webContents.navigationHistory.goForward();
+    const contents = tab?.contents;
+    if (contents?.navigationHistory.canGoForward()) contents.navigationHistory.goForward();
   }
 
   reload(ignoreCache = false): void {
     const tab = this.tabs.active();
     if (!tab) return;
+    tab.thaw();
     if (ignoreCache) tab.webContents.reloadIgnoringCache();
     else tab.webContents.reload();
   }
 
   stop(): void {
-    this.tabs.active()?.webContents.stop();
+    this.tabs.active()?.contents?.stop();
   }
 
   zoom(direction: 1 | -1 | 0): void {
     const tab = this.tabs.active();
     if (!tab) return;
+    tab.thaw();
     const current = tab.webContents.getZoomLevel();
     const next = direction === 0 ? 0 : Math.max(-3, Math.min(5, current + direction * 0.5));
     tab.webContents.setZoomLevel(next);
@@ -302,14 +428,16 @@ export class BrowserWindowController {
 
   toggleMute(): void {
     const tab = this.tabs.active();
-    if (!tab) return;
-    tab.webContents.setAudioMuted(!tab.webContents.isAudioMuted());
+    const contents = tab?.contents;
+    if (!contents) return;
+    contents.setAudioMuted(!contents.isAudioMuted());
     this.scheduleState();
   }
 
   find(text: string, forward = true, findNext = false): void {
     const tab = this.tabs.active();
     if (!tab) return;
+    tab.thaw();
     this.lastFind = text;
     if (!text) {
       tab.webContents.stopFindInPage('clearSelection');
@@ -334,12 +462,13 @@ export class BrowserWindowController {
   }
 
   stopFind(): void {
-    this.tabs.active()?.webContents.stopFindInPage('clearSelection');
+    this.tabs.active()?.contents?.stopFindInPage('clearSelection');
   }
 
   toggleDevTools(): void {
     const tab = this.tabs.active();
     if (!tab) return;
+    tab.thaw();
     const contents = tab.webContents;
     if (contents.isDevToolsOpened()) contents.closeDevTools();
     else contents.openDevTools({ mode: 'detach' });
@@ -347,19 +476,21 @@ export class BrowserWindowController {
 
   printPage(): void {
     const tab = this.tabs.active();
+    tab?.thaw();
     if (tab) void tab.webContents.print({});
   }
 
   async savePage(): Promise<void> {
     const tab = this.tabs.active();
     if (!tab) return;
-    const suggested = `${(tab.title || 'pagina').replace(/[^\w\- ]+/g, '').trim() || 'pagina'}.html`;
+    tab.thaw();
+    const suggested = `${(tab.title || 'page').replace(/[^\w\- ]+/g, '').trim() || 'page'}.html`;
     const result = await dialog.showSaveDialog(this.window, {
-      title: 'Salva pagina',
+      title: 'Save page',
       defaultPath: join(this.ctx.store.settings.value.downloads.directory, suggested),
       filters: [
-        { name: 'Pagina web completa', extensions: ['html'] },
-        { name: 'Solo HTML', extensions: ['html'] },
+        { name: 'Complete web page', extensions: ['html'] },
+        { name: 'HTML only', extensions: ['html'] },
       ],
     });
     if (result.canceled || !result.filePath) return;
@@ -419,7 +550,7 @@ export class BrowserWindowController {
     if (tab === this.tabs.active()) {
       this.syncViews();
       this.layout();
-      if (!this.overlay) this.scheduleState();
+      if (!tab.loading) this.schedulePreview(tab);
     }
     this.scheduleState();
   }
@@ -457,7 +588,7 @@ export class BrowserWindowController {
     if (
       settings.privacy.httpsFirst &&
       url.startsWith('https://') &&
-      (code === -202 || code === -101 || code === -501)
+      (code === -202 || code === -101 || code === -501 || code === -107 || code === -324)
     ) {
       this.ctx.privacy.allowHttpFallback(url);
       tab.load(url.replace(/^https:\/\//, 'http://'));
@@ -484,4 +615,21 @@ export function isInternalNavigation(url: string): boolean {
   } catch {
     return false;
   }
+}
+
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T | null> {
+  return new Promise((resolve) => {
+    const timer = setTimeout(() => resolve(null), ms);
+    timer.unref?.();
+    promise.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      () => {
+        clearTimeout(timer);
+        resolve(null);
+      },
+    );
+  });
 }

@@ -16,15 +16,15 @@ let current: Settings = initial;
 let report: PrivacyReport | null = null;
 
 const statsGrid = el('div', { class: 'stats-grid' });
-const domainsCard = card('Domini più bloccati', 'Conteggi aggregati, senza cronologia delle singole richieste.');
-const exceptionsCard = card('Eccezioni per sito', 'Disattiva il blocco dei tracker su un dominio specifico.');
-const settingsCard = card('Protezioni', null);
-const dataCard = card('Dati locali', null);
+const domainsCard = card('Most blocked domains', 'Aggregate counts, without a log of individual requests.');
+const exceptionsCard = card('Site exceptions', 'Turn blocking off for one domain.');
+const settingsCard = card('Protections', null);
+const dataCard = card('Local data', null);
 
 main.append(
   heading(
     'Privacy',
-    'LomeSearch non ha account, non sincronizza nulla e non registra le query. Questa pagina mostra cosa viene bloccato e dove vivono i dati.',
+    'LomeSearch has no account, syncs nothing and logs no query. This page shows what is blocked and where the data lives.',
   ),
   statsGrid,
   el('div', { style: 'height:18px' }),
@@ -36,17 +36,17 @@ main.append(
 
 async function patchPrivacy(patch: Partial<Settings['privacy']>): Promise<void> {
   current = await lome.settings.update({ privacy: { ...current.privacy, ...patch } });
-  toast('Protezione aggiornata');
+  toast('Protection updated');
   await refresh();
 }
 
 function renderStats(summary: PrivacySummary): void {
   clear(statsGrid);
   const values: Array<[string, string]> = [
-    [summary.blockedSession.toLocaleString('it-IT'), 'bloccate in questa sessione'],
-    [summary.blockedTotal.toLocaleString('it-IT'), 'bloccate in totale'],
-    [summary.blocklistSize.toLocaleString('it-IT'), 'regole nella lista'],
-    [String(summary.topDomains.length), 'domini osservati'],
+    [summary.blockedSession.toLocaleString('en-US'), 'blocked this session'],
+    [summary.blockedTotal.toLocaleString('en-US'), 'blocked in total'],
+    [summary.blocklistSize.toLocaleString('en-US'), 'rules in the list'],
+    [String(summary.topDomains.length), 'domains observed'],
   ];
   for (const [value, name] of values) {
     statsGrid.append(
@@ -58,23 +58,23 @@ function renderStats(summary: PrivacySummary): void {
 function renderDomains(summary: PrivacySummary): void {
   clear(domainsCard);
   domainsCard.append(
-    el('h2', {}, 'Domini più bloccati'),
-    el('p', { class: 'hint' }, 'Conteggi aggregati, senza cronologia delle singole richieste.'),
+    el('h2', {}, 'Most blocked domains'),
+    el('p', { class: 'hint' }, 'Aggregate counts, without a log of individual requests.'),
   );
   if (summary.topDomains.length === 0) {
     domainsCard.append(
-      el('div', { class: 'empty' }, el('strong', {}, 'Nessun tracker bloccato finora'), 'Naviga un po’ e torna qui.'),
+      el('div', { class: 'empty' }, el('strong', {}, 'No tracker blocked yet'), 'Browse for a while and come back.'),
     );
     return;
   }
   const table = el('table', {});
   table.append(
-    el('thead', {}, el('tr', {}, el('th', {}, 'Dominio'), el('th', { class: 'num' }, 'Richieste'))),
+    el('thead', {}, el('tr', {}, el('th', {}, 'Domain'), el('th', { class: 'num' }, 'Requests'))),
   );
   const tbody = el('tbody', {});
   for (const entry of summary.topDomains) {
     tbody.append(
-      el('tr', {}, el('td', {}, entry.domain), el('td', { class: 'num' }, entry.count.toLocaleString('it-IT'))),
+      el('tr', {}, el('td', {}, entry.domain), el('td', { class: 'num' }, entry.count.toLocaleString('en-US'))),
     );
   }
   table.append(tbody);
@@ -84,8 +84,8 @@ function renderDomains(summary: PrivacySummary): void {
 function renderExceptions(): void {
   clear(exceptionsCard);
   exceptionsCard.append(
-    el('h2', {}, 'Eccezioni per sito'),
-    el('p', { class: 'hint' }, 'Disattiva il blocco dei tracker su un dominio specifico.'),
+    el('h2', {}, 'Site exceptions'),
+    el('p', { class: 'hint' }, 'Turn blocking off for one domain.'),
   );
   const exceptions = report?.exceptions ?? [];
   const list = el('ul', { class: 'list' });
@@ -101,13 +101,13 @@ function renderExceptions(): void {
           el(
             'div',
             { class: 'url' },
-            exception.blockTrackers ? 'Blocco attivo' : 'Blocco disattivato per questo sito',
+            exception.blockTrackers ? 'Blocking on' : 'Blocking off for this site',
           ),
         ),
         el(
           'div',
           { class: 'actions' },
-          button('Rimuovi', async () => {
+          button('Remove', async () => {
             await lome.privacy.removeException(exception.domain);
             await refresh();
           }, 'small'),
@@ -116,7 +116,7 @@ function renderExceptions(): void {
     );
   }
   if (exceptions.length === 0) {
-    list.append(el('li', { class: 'empty' }, 'Nessuna eccezione configurata.'));
+    list.append(el('li', { class: 'empty' }, 'No exception configured.'));
   }
   exceptionsCard.append(list);
 
@@ -132,12 +132,12 @@ function renderExceptions(): void {
         void lome.privacy.setException(domain, false).then(async () => {
           input!.value = '';
           await refresh();
-          toast('Eccezione aggiunta');
+          toast('Exception added');
         });
       },
     },
-    el('input', { type: 'text', placeholder: 'esempio.com', 'aria-label': 'Dominio senza blocco' }),
-    el('button', { class: 'btn', type: 'submit' }, 'Disattiva blocco'),
+    el('input', { type: 'text', placeholder: 'example.com', 'aria-label': 'Domain without blocking' }),
+    el('button', { class: 'btn', type: 'submit' }, 'Turn blocking off'),
   );
   exceptionsCard.append(form);
 }
@@ -153,61 +153,79 @@ function networkRow(label: string, detail: string): HTMLElement {
 function renderSettings(): void {
   clear(settingsCard);
   settingsCard.append(
-    el('h2', {}, 'Protezioni'),
+    el('h2', {}, 'Protections'),
     toggleRow(
-      'Blocca tracker e pubblicità',
-      'Lista integrata più eventuale lista remota.',
+      'Block trackers',
+      'Built-in list plus the optional remote list.',
       current.privacy.blockTrackers,
       (value) => patchPrivacy({ blockTrackers: value }),
     ),
     toggleRow(
-      'Blocca cookie di terze parti',
-      'Cookie e Set-Cookie rimossi per domini terzi.',
+      'Block ads',
+      'Ad networks, separate from the tracker list.',
+      current.privacy.blockAds,
+      (value) => patchPrivacy({ blockAds: value }),
+    ),
+    toggleRow(
+      'Hide ad slots',
+      'CSS list that removes common ad containers before they render.',
+      current.privacy.cosmeticFiltering,
+      (value) => patchPrivacy({ cosmeticFiltering: value }),
+    ),
+    toggleRow(
+      'Block third-party cookies',
+      'Cookie and Set-Cookie removed for third-party domains.',
       current.privacy.blockThirdPartyCookies,
       (value) => patchPrivacy({ blockThirdPartyCookies: value }),
     ),
     toggleRow(
-      'HTTPS prima',
-      'Tenta sempre la versione cifrata.',
+      'HTTPS first',
+      'Always try the encrypted version first.',
       current.privacy.httpsFirst,
       (value) => patchPrivacy({ httpsFirst: value }),
     ),
     toggleRow(
-      'Do Not Track e GPC',
-      'Invia DNT: 1 e Sec-GPC: 1 a ogni richiesta.',
+      'Do Not Track and GPC',
+      'Sends DNT: 1 and Sec-GPC: 1 on every request.',
       current.privacy.sendDoNotTrack,
       (value) => patchPrivacy({ sendDoNotTrack: value }),
     ),
     toggleRow(
-      'Protezione dal fingerprinting',
-      'Rumore stabile per sito su canvas, WebGL e audio.',
+      'Fingerprint protection',
+      'Stable per-site noise on canvas, WebGL and audio.',
       current.privacy.fingerprintProtection,
       (value) => patchPrivacy({ fingerprintProtection: value }),
     ),
     networkRow(
       'WebRTC',
       current.privacy.webrtcPolicy === 'disable'
-        ? 'Bloccato: nessun UDP diretto, nessun IP locale verso i siti.'
+        ? 'Blocked: no direct UDP, no local IP towards sites.'
         : current.privacy.webrtcPolicy === 'public-interface'
-          ? 'Solo interfaccia pubblica: gli IP locali non escono.'
-          : 'Comportamento Chromium: può esporre IP locali.',
+          ? 'Public interface only: local IPs do not leave.'
+          : 'Chromium default: may expose local IPs.',
     ),
     networkRow(
       'Referer',
       current.privacy.referrerPolicy === 'none'
-        ? 'Mai inviato.'
+        ? 'Never sent.'
         : current.privacy.referrerPolicy === 'origin'
-          ? 'Sempre ridotto all’origine.'
-          : 'Origine tra siti diversi, URL completo solo nello stesso sito.',
+          ? 'Always reduced to the origin.'
+          : 'Origin across sites, full URL only within the same site.',
     ),
-    networkRow('Fuso orario', current.privacy.spoofTimezone ? 'UTC' : 'Fuso orario del sistema.'),
+    networkRow('Timezone', current.privacy.spoofTimezone ? 'UTC' : 'System timezone.'),
     networkRow(
       'DNS',
-      current.privacy.dnsOverHttps ? 'Cloudflare DoH (richiede riavvio).' : 'Risolutore del sistema operativo.',
+      current.privacy.dnsOverHttps ? 'Cloudflare DoH (needs a restart).' : 'Operating system resolver.',
     ),
     networkRow(
-      'Correttore ortografico',
-      current.privacy.spellchecker ? 'Attivo: scarica i dizionari da un CDN di Google.' : 'Disattivato.',
+      'Spellchecker',
+      current.privacy.spellchecker ? 'On: downloads dictionaries from a Google CDN.' : 'Off.',
+    ),
+    networkRow(
+      'Fake IP headers',
+      current.privacy.fakeIpEnabled
+        ? `Decoy headers with ${current.privacy.fakeIpAddress.trim() || 'a random reserved address'}. The real IP is still visible to servers.`
+        : 'Off. Decoy forwarding headers, not a proxy.',
     ),
   );
 }
@@ -215,17 +233,17 @@ function renderSettings(): void {
 function renderData(): void {
   clear(dataCard);
   dataCard.append(
-    el('h2', {}, 'Dati locali'),
+    el('h2', {}, 'Local data'),
     el(
       'p',
       { class: 'hint' },
-      'Indice, cronologia, preferiti e impostazioni vivono nella cartella dati del browser. Nessun dato viene inviato a server esterni.',
+      'The index, history, bookmarks and settings live in the browser data folder. Nothing is sent to external servers.',
     ),
     el(
       'div',
       { class: 'row' },
-      el('div', { class: 'label' }, el('strong', {}, 'Cartella dati'), el('small', {}, 'Apri il percorso sul computer.')),
-      button('Apri', () => lome.app.openDataDir(), 'small'),
+      el('div', { class: 'label' }, el('strong', {}, 'Data folder'), el('small', {}, 'Open the path on this computer.')),
+      button('Open', () => lome.app.openDataDir(), 'small'),
     ),
     el(
       'div',
@@ -233,12 +251,12 @@ function renderData(): void {
       el(
         'div',
         { class: 'label' },
-        el('strong', {}, 'Cookie, cache e archiviazione'),
-        el('small', {}, 'Cancella tutto ciò che i siti hanno salvato.'),
+        el('strong', {}, 'Cookies, cache and storage'),
+        el('small', {}, 'Delete everything sites stored.'),
       ),
-      button('Cancella', async () => {
+      button('Clear', async () => {
         await lome.app.clearData({ cookies: true, cache: true, localStorage: true });
-        toast('Dati dei siti cancellati');
+        toast('Site data cleared');
         await refresh();
       }, 'danger'),
     ),
@@ -248,12 +266,12 @@ function renderData(): void {
       el(
         'div',
         { class: 'label' },
-        el('strong', {}, 'Cronologia'),
-        el('small', {}, 'Rimuove le pagine visitate.'),
+        el('strong', {}, 'History'),
+        el('small', {}, 'Removes the pages you visited.'),
       ),
-      button('Cancella', async () => {
+      button('Clear', async () => {
         await lome.history.clear();
-        toast('Cronologia cancellata');
+        toast('History cleared');
       }, 'danger'),
     ),
     el(
@@ -262,13 +280,13 @@ function renderData(): void {
       el(
         'div',
         { class: 'label' },
-        el('strong', {}, 'Tutti i dati di navigazione'),
-        el('small', {}, 'Cookie, cache, archiviazione locale, cronologia e download.'),
+        el('strong', {}, 'All browsing data'),
+        el('small', {}, 'Cookies, cache, local storage, history and downloads.'),
       ),
-      button('Cancella tutto', async () => {
-        if (!window.confirm('Cancellare tutti i dati di navigazione?')) return;
+      button('Clear all', async () => {
+        if (!window.confirm('Clear all browsing data?')) return;
         await lome.app.clearData({ cookies: true, cache: true, localStorage: true, history: true, downloads: true });
-        toast('Dati cancellati');
+        toast('Data cleared');
         await refresh();
       }, 'danger'),
     ),

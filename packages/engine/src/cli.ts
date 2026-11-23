@@ -18,61 +18,61 @@ import {
 const VERSION = '1.0.0';
 const DEFAULT_PORT = 7717;
 
-const HELP = `LomeSearch ${VERSION} - motore di ricerca locale
+const HELP = `LomeSearch ${VERSION} - local search engine
 
-Uso:
-  lomesearch serve [opzioni]                 avvia il server di ricerca
-  lomesearch crawl <url...> [opzioni]        indicizza siti web
-  lomesearch index <file.jsonl> [opzioni]    importa documenti
-  lomesearch search <query> [opzioni]        interroga l'indice da terminale
-  lomesearch suggest <prefisso>              suggerimenti di completamento
-  lomesearch stats                           statistiche dell'indice
-  lomesearch optimize                        compatta segmenti e archivio
-  lomesearch indexnow <key|submit|verify>    strumenti IndexNow
+Usage:
+  lomesearch serve [options]                 start the search server
+  lomesearch crawl <url...> [options]        index websites
+  lomesearch index <file.jsonl> [options]    import documents
+  lomesearch search <query> [options]        query the index from the terminal
+  lomesearch suggest <prefix>                completion suggestions
+  lomesearch stats                           index statistics
+  lomesearch optimize                        compact segments and archive
+  lomesearch indexnow <key|submit|verify>    IndexNow tools
   lomesearch version | help
 
-Opzioni comuni:
-  --dir <percorso>       directory dei dati (default: ${defaultDataDir()})
-  --json                 output JSON
-  --quiet                nessun progresso su stderr
+Common options:
+  --dir <path>           data directory (default: ${defaultDataDir()})
+  --json                 JSON output
+  --quiet                no progress on stderr
 
 serve:
-  --port <n>             porta (default ${DEFAULT_PORT}; 0 = casuale)
-  --bind <indirizzo>     indirizzo di ascolto (default 127.0.0.1)
-  --engine-host <host>   nome pubblico usato nei link OpenSearch
-  --key <chiave>         chiave IndexNow servita da /indexnow/<chiave>.txt
-  --seed <url>           URL iniziale (ripetibile)
-  --crawl                avvia subito la scansione dei seed
-  --max-pages <n>        pagine massime per scansione (default 200)
-  --delay <ms>           pausa minima per host (default 1000)
-  --concurrency <n>      richieste parallele (default 4)
+  --port <n>             port (default ${DEFAULT_PORT}; 0 = random)
+  --bind <address>       listen address (default 127.0.0.1)
+  --engine-host <host>   public name used in OpenSearch links
+  --key <key>            IndexNow key served from /indexnow/<key>.txt
+  --seed <url>           starting URL (repeatable)
+  --crawl                crawl the seeds immediately
+  --max-pages <n>        pages per crawl (default 200)
+  --delay <ms>           minimum delay per host (default 1000)
+  --concurrency <n>      parallel requests (default 4)
 
 crawl:
-  --max-pages <n>        pagine massime (default 200)
-  --max-depth <n>        profondità massima dei link (default 3)
-  --concurrency <n>      richieste parallele (default 4)
-  --delay <ms>           pausa minima per host (default 1000)
-  --user-agent <string>  user agent del crawler
-  --no-same-site         segui anche link verso altri domini
-  --no-robots            ignora robots.txt (sconsigliato)
-  --no-sitemaps          non leggere le sitemap
-  --optimize             compatta l'indice al termine
+  --max-pages <n>        maximum pages (default 200)
+  --max-depth <n>        maximum link depth (default 3)
+  --concurrency <n>      parallel requests (default 4)
+  --delay <ms>           minimum delay per host (default 1000)
+  --user-agent <string>  crawler user agent
+  --no-same-site         follow links to other domains too
+  --no-robots            ignore robots.txt (not recommended)
+  --no-sitemaps          do not read sitemaps
+  --optimize             compact the index when done
 
 index:
-  --optimize             compatta l'indice al termine
+  --optimize             compact the index when done
 
 search:
-  --limit <n>            risultati (default 10)
-  --page <n>             pagina (default 1)
+  --limit <n>            results (default 10)
+  --page <n>             page (default 1)
 
 indexnow submit <url...>:
-  --host <host> --key <chiave> [--endpoint <url>] [--key-location <url>]
+  --host <host> --key <key> [--endpoint <url>] [--key-location <url>]
 
 indexnow verify:
-  --host <host> --key <chiave> [--key-location <url>]
+  --host <host> --key <key> [--key-location <url>]
 
 indexnow key:
-  --host <host>          genera una chiave e mostra il file da pubblicare
+  --host <host>          generate a key and print the file to publish
 `;
 
 function defaultDataDir(): string {
@@ -147,9 +147,9 @@ async function commandServe(argv: string[]): Promise<void> {
     concurrency: numberOption(values.concurrency, 4),
     onEvent: (event) => {
       if (common.quiet) return;
-      if (event.type === 'indexed') process.stderr.write(`  indicizzato ${event.url}\n`);
-      else if (event.type === 'skipped') process.stderr.write(`  saltato ${event.url} (${event.reason})\n`);
-      else if (event.type === 'error') process.stderr.write(`  errore ${event.url}: ${event.message}\n`);
+      if (event.type === 'indexed') process.stderr.write(`  indexed ${event.url}\n`);
+      else if (event.type === 'skipped') process.stderr.write(`  skipped ${event.url} (${event.reason})\n`);
+      else if (event.type === 'error') process.stderr.write(`  error ${event.url}: ${event.message}\n`);
     },
   });
 
@@ -163,19 +163,19 @@ async function commandServe(argv: string[]): Promise<void> {
     log: common.quiet ? undefined : (line) => process.stderr.write(`${line}\n`),
   });
 
-  process.stdout.write(`LomeSearch in ascolto su ${server.origin}\n`);
-  process.stdout.write(`  pagina di ricerca  ${server.origin}/\n`);
+  process.stdout.write(`LomeSearch listening on ${server.origin}\n`);
+  process.stdout.write(`  search page        ${server.origin}/\n`);
   process.stdout.write(`  OpenSearch         ${server.origin}/opensearch.xml\n`);
   process.stdout.write(`  IndexNow           POST ${server.origin}/indexnow\n`);
-  process.stdout.write(`  chiave IndexNow    ${server.origin}/indexnow/${key}.txt\n`);
-  process.stdout.write(`  dati               ${common.dir}\n`);
+  process.stdout.write(`  IndexNow key       ${server.origin}/indexnow/${key}.txt\n`);
+  process.stdout.write(`  data               ${common.dir}\n`);
 
   const seeds = (values.seed as string[] | undefined) ?? [];
   if (seeds.length > 0 && values.crawl) {
-    process.stderr.write(`scansione di ${seeds.length} seed...\n`);
+    process.stderr.write(`crawling ${seeds.length} seed(s)...\n`);
     const stats = await service.run(seeds);
     process.stderr.write(
-      `scansione conclusa: ${stats.indexed} indicizzati, ${stats.skipped} saltati, ${stats.errors} errori\n`,
+      `crawl finished: ${stats.indexed} indexed, ${stats.skipped} skipped, ${stats.errors} errors\n`,
     );
   }
 
@@ -183,7 +183,7 @@ async function commandServe(argv: string[]): Promise<void> {
   const shutdown = async (): Promise<void> => {
     if (closing) return;
     closing = true;
-    process.stderr.write('\narresto in corso...\n');
+    process.stderr.write('\nstopping...\n');
     await server.close();
     index.close();
     process.exit(0);
@@ -224,7 +224,7 @@ async function commandCrawl(argv: string[]): Promise<void> {
       json: { type: 'boolean' },
     },
   });
-  if (positionals.length === 0) fail('specifica almeno un URL da scansionare');
+  if (positionals.length === 0) fail('specify at least one URL to crawl');
   const common = commonOptions(values);
   const index = openIndex(common.dir);
   const sameSite = values['no-same-site'] === true ? false : true;
@@ -255,13 +255,13 @@ async function commandCrawl(argv: string[]): Promise<void> {
   } else {
     process.stdout.write(
       [
-        `pagine richieste   ${stats.fetched}`,
-        `documenti indicizzati ${stats.indexed}`,
-        `saltati            ${stats.skipped}`,
-        `errori             ${stats.errors}`,
-        `URL da sitemap     ${stats.sitemapUrls}`,
-        `dati scaricati     ${(stats.bytes / 1024 / 1024).toFixed(1)} MiB`,
-        `durata             ${(stats.durationMs / 1000).toFixed(1)} s`,
+        `pages fetched      ${stats.fetched}`,
+        `documents indexed  ${stats.indexed}`,
+        `skipped            ${stats.skipped}`,
+        `errors             ${stats.errors}`,
+        `sitemap URLs       ${stats.sitemapUrls}`,
+        `downloaded         ${(stats.bytes / 1024 / 1024).toFixed(1)} MiB`,
+        `duration           ${(stats.durationMs / 1000).toFixed(1)} s`,
       ].join('\n') + '\n',
     );
   }
@@ -280,7 +280,7 @@ async function commandIndex(argv: string[]): Promise<void> {
     },
   });
   const file = positionals[0];
-  if (!file) fail('specifica un file JSONL');
+  if (!file) fail('specify a JSONL file');
   const common = commonOptions(values);
   const index = openIndex(common.dir);
   const reader = createInterface({ input: createReadStream(file, 'utf8'), crlfDelay: Infinity });
@@ -293,14 +293,14 @@ async function commandIndex(argv: string[]): Promise<void> {
     if (!trimmed) continue;
     try {
       const document = JSON.parse(trimmed) as IndexDocument;
-      if (!document.url || typeof document.body !== 'string') throw new Error('url e body sono obbligatori');
+      if (!document.url || typeof document.body !== 'string') throw new Error('url and body are required');
       index.addDocument(document);
       added++;
-      if (!common.quiet && added % 1000 === 0) process.stderr.write(`${added} documenti\n`);
+      if (!common.quiet && added % 1000 === 0) process.stderr.write(`${added} documents\n`);
     } catch (error) {
       failed++;
       if (!common.quiet) {
-        process.stderr.write(`riga ${lineNumber}: ${error instanceof Error ? error.message : String(error)}\n`);
+        process.stderr.write(`line ${lineNumber}: ${error instanceof Error ? error.message : String(error)}\n`);
       }
     }
   }
@@ -308,7 +308,7 @@ async function commandIndex(argv: string[]): Promise<void> {
   if (values.optimize === true) index.optimize();
   index.close();
   if (common.json) process.stdout.write(`${JSON.stringify({ added, failed, lines: lineNumber })}\n`);
-  else process.stdout.write(`${added} documenti indicizzati, ${failed} righe scartate\n`);
+  else process.stdout.write(`${added} documents indexed, ${failed} lines discarded\n`);
 }
 
 function commandSearch(argv: string[]): void {
@@ -324,7 +324,7 @@ function commandSearch(argv: string[]): void {
     },
   });
   const query = positionals.join(' ').trim();
-  if (!query) fail('specifica una query');
+  if (!query) fail('specify a query');
   const common = commonOptions(values);
   const index = openIndex(common.dir);
   const limit = numberOption(values.limit, 10);
@@ -336,9 +336,9 @@ function commandSearch(argv: string[]): void {
     return;
   }
   process.stdout.write(
-    `${response.total}${response.totalRelation === 'gte' ? '+' : ''} risultati in ${response.tookMs.toFixed(1)} ms\n`,
+    `${response.total}${response.totalRelation === 'gte' ? '+' : ''} results in ${response.tookMs.toFixed(1)} ms\n`,
   );
-  if (response.suggestion) process.stdout.write(`forse cercavi: ${response.suggestion}\n`);
+  if (response.suggestion) process.stdout.write(`did you mean: ${response.suggestion}\n`);
   for (const result of response.results) {
     const snippet = result.snippet.replace(/<\/?mark>/g, '*').replace(/<[^>]+>/g, '');
     process.stdout.write(`\n${result.title}\n  ${result.url}\n  ${snippet}\n`);
@@ -352,7 +352,7 @@ function commandSuggest(argv: string[]): void {
     options: { dir: { type: 'string' }, json: { type: 'boolean' }, quiet: { type: 'boolean' } },
   });
   const prefix = positionals.join(' ').trim();
-  if (!prefix) fail('specifica un prefisso');
+  if (!prefix) fail('specify a prefix');
   const common = commonOptions(values);
   const index = openIndex(common.dir);
   const suggestions = index.suggest(prefix, 8);
@@ -377,14 +377,14 @@ function commandStats(argv: string[]): void {
   }
   process.stdout.write(
     [
-      `documenti          ${stats.documents}`,
-      `segmenti           ${stats.segments}`,
-      `termini (posting)  ${stats.indexedTerms}`,
-      `tombstone          ${stats.tombstones}`,
-      `archivio documenti ${(stats.documentBytes / 1024 / 1024).toFixed(1)} MiB`,
-      `segmenti su disco  ${(stats.segmentBytes / 1024 / 1024).toFixed(1)} MiB`,
-      `lunghezze medie    ${stats.averageLengths.map((value) => value.toFixed(1)).join(' / ')}`,
-      `aggiornato         ${stats.updatedAt ? new Date(stats.updatedAt).toISOString() : 'mai'}`,
+      `documents          ${stats.documents}`,
+      `segments           ${stats.segments}`,
+      `terms (postings)   ${stats.indexedTerms}`,
+      `tombstones         ${stats.tombstones}`,
+      `document store     ${(stats.documentBytes / 1024 / 1024).toFixed(1)} MiB`,
+      `segments on disk   ${(stats.segmentBytes / 1024 / 1024).toFixed(1)} MiB`,
+      `average lengths    ${stats.averageLengths.map((value) => value.toFixed(1)).join(' / ')}`,
+      `updated            ${stats.updatedAt ? new Date(stats.updatedAt).toISOString() : 'never'}`,
     ].join('\n') + '\n',
   );
 }
@@ -403,7 +403,7 @@ function commandOptimize(argv: string[]): void {
   if (common.json) process.stdout.write(`${JSON.stringify({ ...result, stats }, null, 2)}\n`);
   else {
     process.stdout.write(
-      `segmenti compattati: ${result.mergedSegments}\ndocumenti conservati: ${result.vacuumedDocuments}\n`,
+      `segments merged: ${result.mergedSegments}\ndocuments kept: ${result.vacuumedDocuments}\n`,
     );
   }
 }
@@ -421,13 +421,13 @@ async function commandIndexNow(argv: string[]): Promise<void> {
     const location = host ? buildKeyLocation(host, key) : `<host>/${key}.txt`;
     process.stdout.write(
       [
-        `chiave:        ${key}`,
-        `file da pubblicare su ${host ?? '<host>'}: ${key}.txt`,
-        `contenuto del file: ${key}`,
-        `URL del file:  ${location}`,
+        `key:            ${key}`,
+        `file to publish on ${host ?? '<host>'}: ${key}.txt`,
+        `file content:   ${key}`,
+        `file URL:       ${location}`,
         '',
-        'Aggiungi la chiave al server con --key, poi invia gli URL con:',
-        `  lomesearch indexnow submit https://${host ?? 'example.com'}/pagina --host ${host ?? 'example.com'} --key ${key}`,
+        'Add the key to the server with --key, then submit URLs with:',
+        `  lomesearch indexnow submit https://${host ?? 'example.com'}/page --host ${host ?? 'example.com'} --key ${key}`,
       ].join('\n') + '\n',
     );
     return;
@@ -447,8 +447,8 @@ async function commandIndexNow(argv: string[]): Promise<void> {
     });
     const host = stringOption(values.host);
     const key = stringOption(values.key);
-    if (!host || !key) fail('--host e --key sono obbligatori');
-    if (positionals.length === 0) fail('specifica almeno un URL');
+    if (!host || !key) fail('--host and --key are required');
+    if (positionals.length === 0) fail('specify at least one URL');
     const client = new IndexNowClient({
       host,
       key,
@@ -457,7 +457,7 @@ async function commandIndexNow(argv: string[]): Promise<void> {
     });
     const result = await client.submit(positionals);
     if (values.json === true) process.stdout.write(`${JSON.stringify(result)}\n`);
-    else process.stdout.write(`${result.ok ? 'accettati' : 'rifiutati'} ${result.submitted} URL (HTTP ${result.status}) - ${result.message}\n`);
+    else process.stdout.write(`${result.ok ? 'accepted' : 'rejected'} ${result.submitted} URL(s) (HTTP ${result.status}) - ${result.message}\n`);
     if (!result.ok) process.exitCode = 1;
     return;
   }
@@ -475,7 +475,7 @@ async function commandIndexNow(argv: string[]): Promise<void> {
     });
     const host = stringOption(values.host);
     const key = stringOption(values.key);
-    if (!host || !key) fail('--host e --key sono obbligatori');
+    if (!host || !key) fail('--host and --key are required');
     const payload: { host: string; key: string; keyLocation?: string; urlList: string[] } = {
       host,
       key,
@@ -485,12 +485,12 @@ async function commandIndexNow(argv: string[]): Promise<void> {
     if (keyLocation) payload.keyLocation = keyLocation;
     const result = await verifyKeyFile(payload);
     if (values.json === true) process.stdout.write(`${JSON.stringify({ result })}\n`);
-    else process.stdout.write(`verifica: ${result}\n`);
+    else process.stdout.write(`verification: ${result}\n`);
     if (result !== 'valid') process.exitCode = 1;
     return;
   }
 
-  fail(`sottocomando IndexNow sconosciuto: ${subcommand ?? '(nessuno)'}`);
+  fail(`unknown IndexNow subcommand: ${subcommand ?? '(none)'}`);
 }
 
 async function main(): Promise<void> {
@@ -530,7 +530,7 @@ async function main(): Promise<void> {
       await commandIndexNow(rest);
       break;
     default:
-      fail(`comando sconosciuto: ${command}\n\n${HELP}`);
+      fail(`unknown command: ${command}\n\n${HELP}`);
   }
 }
 

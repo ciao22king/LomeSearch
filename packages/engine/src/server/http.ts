@@ -97,7 +97,7 @@ export async function startSearchServer(options: SearchServerOptions): Promise<S
     void handle(request, response).catch((error: unknown) => {
       log(`error ${error instanceof Error ? error.message : String(error)}`);
       if (!response.headersSent) {
-        sendHtml(response, 500, renderErrorPage(500, 'Errore interno del motore di ricerca.'));
+        sendHtml(response, 500, renderErrorPage(500, 'Internal search engine error.'));
       } else {
         response.end();
       }
@@ -109,7 +109,7 @@ export async function startSearchServer(options: SearchServerOptions): Promise<S
     setSecurityHeaders(response);
     const allowedHosts = [...(options.allowedHosts ?? []), engineHost];
     if (!isAllowedHost(request.headers.host, bindAddress, allowedHosts)) {
-      sendJson(response, 421, { error: 'host non consentito' });
+      sendJson(response, 421, { error: 'host not allowed' });
       return;
     }
     const url = new URL(request.url ?? '/', `http://${request.headers.host ?? 'localhost'}`);
@@ -203,7 +203,7 @@ export async function startSearchServer(options: SearchServerOptions): Promise<S
       }
       const clientKey = clientKeys.keyFor(clientAddress(request, options.trustProxy));
       if (!searchLimiter.take(clientKey)) {
-        sendHtml(response, 429, renderErrorPage(429, 'Troppe richieste. Riprova tra un minuto.'));
+        sendHtml(response, 429, renderErrorPage(429, 'Too many requests. Try again in a minute.'));
         return;
       }
       const query = (url.searchParams.get('q') ?? '').slice(0, 512);
@@ -243,7 +243,7 @@ export async function startSearchServer(options: SearchServerOptions): Promise<S
       return;
     }
 
-    sendHtml(response, 404, renderErrorPage(404, 'Pagina non trovata.'));
+    sendHtml(response, 404, renderErrorPage(404, 'Page not found.'));
   }
 
   async function handleIndexNow(request: IncomingMessage, response: ServerResponse): Promise<void> {

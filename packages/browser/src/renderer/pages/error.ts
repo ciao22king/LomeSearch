@@ -11,18 +11,18 @@ const code = Number.parseInt(params.get('code') ?? '0', 10);
 const description = params.get('description') ?? '';
 
 const MESSAGES: Record<number, string> = {
-  [-105]: 'Il nome del sito non è stato risolto. Controlla l’indirizzo o la connessione.',
-  [-106]: 'La connessione a Internet non è disponibile.',
-  [-102]: 'Il server ha rifiutato la connessione.',
-  [-7]: 'Il server non ha risposto in tempo.',
-  [-202]: 'Il certificato del sito non è valido o non è attendibile.',
-  [-21]: 'La rete è cambiata durante il caricamento.',
-  [-324]: 'Il server ha chiuso la connessione senza inviare dati.',
+  [-105]: 'The site name could not be resolved. Check the address or the connection.',
+  [-106]: 'The Internet connection is not available.',
+  [-102]: 'The server refused the connection.',
+  [-7]: 'The server did not answer in time.',
+  [-202]: 'The site certificate is not valid or not trusted.',
+  [-21]: 'The network changed while the page was loading.',
+  [-324]: 'The server closed the connection without sending data.',
 };
 
-const message = MESSAGES[code] ?? 'Non è stato possibile caricare la pagina.';
+const message = MESSAGES[code] ?? 'The page could not be loaded.';
 
-document.title = 'Pagina non disponibile · LomeSearch';
+document.title = 'Page unavailable · LomeSearch';
 document.documentElement.dataset.theme = 'system';
 
 const shell = el(
@@ -31,18 +31,18 @@ const shell = el(
   el(
     'div',
     { class: 'error-page' },
-    el('h1', {}, 'Impossibile raggiungere il sito'),
+    el('h1', {}, 'This site cannot be reached'),
     el('p', { class: 'muted' }, message),
     el('p', { class: 'url' }, url || description),
     el(
       'div',
       { style: 'display:flex;gap:10px' },
-      button('Riprova', () => {
+      button('Try again', () => {
         if (url) void lome.navigate(url);
         else void lome.openPage('newtab');
       }, 'primary'),
-      button('Nuova scheda', () => lome.openPage('newtab')),
-      button('Cerca nell’indice locale', () => {
+      button('New tab', () => lome.openPage('newtab')),
+      button('Search the local index', () => {
         let host = '';
         try {
           host = url ? new URL(url).hostname : '';
@@ -55,7 +55,7 @@ const shell = el(
     el(
       'p',
       { class: 'small muted', style: 'margin-top:26px' },
-      code ? `Codice errore ${code}${description ? ` · ${description}` : ''}` : description,
+      code ? `Error code ${code}${description ? ` · ${description}` : ''}` : description,
     ),
   ),
 );

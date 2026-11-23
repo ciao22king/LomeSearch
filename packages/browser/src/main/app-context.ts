@@ -138,8 +138,9 @@ export class AppContext {
         controller.chromeView.webContents.send(channel, payload);
       }
       for (const tab of controller.tabs.all()) {
-        if (!tab.webContents.isDestroyed() && tab.url.startsWith('lomesearch://')) {
-          tab.webContents.send(channel, payload);
+        const contents = tab.contents;
+        if (contents && !contents.isDestroyed() && tab.url.startsWith('lomesearch://')) {
+          contents.send(channel, payload);
         }
       }
     }

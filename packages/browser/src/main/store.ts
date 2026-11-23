@@ -356,6 +356,8 @@ function mergeSettings(defaults: Settings, loaded: Partial<Settings>): Settings 
     ...defaults,
     ...loaded,
     privacy: { ...defaults.privacy, ...(loaded.privacy ?? {}) },
+    appearance: { ...defaults.appearance, ...(loaded.appearance ?? {}) },
+    performance: { ...defaults.performance, ...(loaded.performance ?? {}) },
     engine: { ...defaults.engine, ...(loaded.engine ?? {}) },
     downloads: { ...defaults.downloads, ...(loaded.downloads ?? {}) },
     history: { ...defaults.history, ...(loaded.history ?? {}) },

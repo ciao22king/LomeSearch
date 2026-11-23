@@ -1,5 +1,6 @@
 import type { Session } from 'electron';
 import type { ClearDataOptions, PrivacySummary, ReferrerPolicySetting } from '../shared/types.js';
+import { applyFakeIpHeaders, pickFakeAddress } from '../shared/fake-ip.js';
 import type { AppStore } from './store.js';
 
 /**
@@ -141,6 +142,95 @@ const TRACKER_HOSTS = new Set<string>([
   'walkme.com',
 ]);
 
+/**
+ * Ad networks that serve creative rather than only measuring it. Kept apart
+ * from the tracker list so "Block ads" can be switched independently.
+ */
+const AD_HOSTS = new Set<string>([
+  '2mdn.net',
+  'adform.net',
+  'adhigh.net',
+  'adition.com',
+  'adkernel.com',
+  'admixer.net',
+  'adocean.pl',
+  'adotmob.com',
+  'adpushup.com',
+  'adriver.ru',
+  'adroll.com',
+  'adscale.de',
+  'adspirit.de',
+  'adtelligent.com',
+  'adverline.com',
+  'adyoulike.com',
+  'aniview.com',
+  'apester.com',
+  'appier.net',
+  'appnexus.com',
+  'bannerflow.com',
+  'beachfront.com',
+  'bidtellect.com',
+  'brightcom.com',
+  'bttrack.com',
+  'buzzoola.com',
+  'cedato.com',
+  'connatix.com',
+  'conversantmedia.com',
+  'cpx.to',
+  'e-planning.net',
+  'ezoic.net',
+  'fastclick.net',
+  'freewheel.tv',
+  'fyber.com',
+  'gammassp.com',
+  'geniee.co.jp',
+  'getintent.com',
+  'ibillboard.com',
+  'im-apps.net',
+  'impact-ad.jp',
+  'improvedigital.com',
+  'inmobi.com',
+  'innity.net',
+  'inskinmedia.com',
+  'intergient.com',
+  'ipredictive.com',
+  'jivox.com',
+  'juicyads.com',
+  'kargo.com',
+  'loopme.me',
+  'media.net',
+  'mgid.com',
+  'microad.jp',
+  'nativeads.com',
+  'nexage.com',
+  'onclickalgo.com',
+  'onetag.com',
+  'pixfuture.com',
+  'playwire.com',
+  'popads.net',
+  'propellerads.com',
+  'pubmine.com',
+  'revcontent.com',
+  'rhythmone.com',
+  'richaudience.com',
+  'sekindo.com',
+  'smaato.net',
+  'smartclip.net',
+  'sonobi.com',
+  'spotxchange.com',
+  'springserve.com',
+  'stickyadstv.com',
+  'supersonicads.com',
+  'tremorhub.com',
+  'triplelift.com',
+  'undertone.com',
+  'unrulymedia.com',
+  'vidoomy.com',
+  'vi-serve.com',
+  'yieldlab.net',
+  'zergnet.com',
+]);
+
 const BLOCKED_PATH_PATTERNS: RegExp[] = [
   /\/pagead\//i,
   /\/adserver\//i,
@@ -258,7 +348,7 @@ export class PrivacyManager {
   constructor(private readonly store: AppStore) {}
 
   get blocklistSize(): number {
-    return TRACKER_HOSTS.size + BLOCKED_PATH_PATTERNS.length + this.remoteHosts.size;
+    return TRACKER_HOSTS.size + AD_HOSTS.size + BLOCKED_PATH_PATTERNS.length + this.remoteHosts.size;
   }
 
   /**
@@ -317,8 +407,13 @@ export class PrivacyManager {
 
       const firstParty = this.firstPartyFor(details, context);
       const exception = firstParty ? this.store.exceptionFor(registrableDomain(firstParty.hostname)) : null;
-      const enabled = settings.blockTrackers && exception?.blockTrackers !== false;
-      if (enabled && this.isTracker(url, firstParty)) {
+      const enabled = exception?.blockTrackers !== false;
+      if (enabled && settings.blockTrackers && this.isTracker(url, firstParty)) {
+        this.recordBlocked(details.webContentsId, url.hostname, context);
+        callback({ cancel: true });
+        return;
+      }
+      if (enabled && settings.blockAds && this.isAd(url, firstParty)) {
         this.recordBlocked(details.webContentsId, url.hostname, context);
         callback({ cancel: true });
         return;
@@ -342,6 +437,9 @@ export class PrivacyManager {
       const firstParty = this.firstPartyFor(details, context);
       if (url) {
         reduceReferrer(headers, url, firstParty, settings.referrerPolicy ?? 'strict');
+        if (settings.fakeIpEnabled && !PRIVATE_HOSTS.test(url.hostname)) {
+          applyFakeIpHeaders(headers, pickFakeAddress(settings.fakeIpAddress));
+        }
       }
       if (settings.blockThirdPartyCookies) {
         if (url && firstParty && registrableDomain(url.hostname) !== registrableDomain(firstParty.hostname)) {
@@ -453,6 +551,12 @@ export class PrivacyManager {
     return false;
   }
 
+  private isAd(url: URL, firstParty: URL | null): boolean {
+    const host = url.hostname.toLowerCase();
+    if (firstParty && registrableDomain(host) === registrableDomain(firstParty.hostname)) return false;
+    return isAdHost(host);
+  }
+
   private isTracker(url: URL, firstParty: URL | null): boolean {
     const host = url.hostname.toLowerCase();
     if (firstParty && registrableDomain(host) === registrableDomain(firstParty.hostname)) {
@@ -463,6 +567,15 @@ export class PrivacyManager {
     const path = `${url.pathname}${url.search}`;
     return BLOCKED_PATH_PATTERNS.some((pattern) => pattern.test(path));
   }
+}
+
+export function isAdHost(host: string): boolean {
+  if (AD_HOSTS.has(host)) return true;
+  const labels = host.split('.');
+  for (let i = 1; i < labels.length - 1; i++) {
+    if (AD_HOSTS.has(labels.slice(i).join('.'))) return true;
+  }
+  return false;
 }
 
 export function isTrackerHost(host: string): boolean {

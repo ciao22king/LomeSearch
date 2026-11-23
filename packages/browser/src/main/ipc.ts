@@ -32,7 +32,7 @@ const fingerprintSeed = randomBytes(16).toString('hex');
 export function registerIpc(ctx: AppContext): void {
   const windowOf = (event: IpcMainInvokeEvent | IpcMainEvent): BrowserWindowController => {
     const controller = ctx.windowForWebContents(event.sender.id);
-    if (!controller) throw new Error('finestra non riconosciuta');
+    if (!controller) throw new Error('unknown window');
     return controller;
   };
   const trusted = (event: IpcMainInvokeEvent | IpcMainEvent): BrowserWindowController => {
@@ -40,7 +40,7 @@ export function registerIpc(ctx: AppContext): void {
     const isChrome = controller.chromeView.webContents.id === event.sender.id;
     const frameUrl = event.senderFrame?.url ?? '';
     if (!isChrome && !frameUrl.startsWith('lomesearch://')) {
-      throw new Error('operazione non consentita da questa pagina');
+      throw new Error('operation not allowed from this page');
     }
     return controller;
   };
@@ -83,6 +83,7 @@ export function registerIpc(ctx: AppContext): void {
       fingerprintProtection: ctx.store.settings.value.privacy.fingerprintProtection,
       fingerprintSeed,
       webrtcPolicy: ctx.store.settings.value.privacy.webrtcPolicy ?? 'disable',
+      cosmeticFiltering: ctx.store.settings.value.privacy.cosmeticFiltering,
       theme: ctx.store.settings.value.theme,
       isPrivate: ctx.windowForWebContents(event.sender.id)?.isPrivate ?? false,
       version: app.getVersion(),
@@ -109,6 +110,8 @@ export function registerIpc(ctx: AppContext): void {
   });
   handle('tabs:close', (event, payload: { id: number }) => windowOf(event).closeTab(payload.id));
   handle('tabs:select', (event, payload: { id: number }) => windowOf(event).selectTab(payload.id));
+  handle('tabs:freeze', (event, payload: { id: number }) => windowOf(event).freezeTab(payload.id));
+  handle('tabs:freeze-inactive', (event) => windowOf(event).freezeInactive());
   handle('tabs:move', (event, payload: { id: number; index: number }) =>
     windowOf(event).moveTab(payload.id, payload.index),
   );
@@ -120,7 +123,7 @@ export function registerIpc(ctx: AppContext): void {
   handle('nav:go', (event, payload: { input: string; url?: string }) => {
     const controller = windowOf(event);
     if (payload.url) {
-      if (!/^(https?|lomesearch):/i.test(payload.url)) throw new Error('schema non consentito');
+      if (!/^(https?|lomesearch):/i.test(payload.url)) throw new Error('scheme not allowed');
       controller.loadUrl(payload.url);
     } else {
       controller.navigate(payload.input);
@@ -170,7 +173,7 @@ export function registerIpc(ctx: AppContext): void {
         const url = buildSearchUrl(settings, status, term);
         if (seen.has(url)) continue;
         seen.add(url);
-        base.push({ type: 'search', title: term, subtitle: 'Ricerca nell’indice locale', url });
+        base.push({ type: 'search', title: term, subtitle: 'Search the local index', url });
       }
     }
     if (settings.suggestFromHistory) {
@@ -318,12 +321,12 @@ export function registerIpc(ctx: AppContext): void {
   // ------------------------------------------------------------- internal pages
 
   handle('page:navigate', (event, payload: { url: string }) => {
-    if (!/^(https?|lomesearch):/i.test(payload.url)) throw new Error('schema non consentito');
+    if (!/^(https?|lomesearch):/i.test(payload.url)) throw new Error('scheme not allowed');
     windowOf(event).loadUrl(payload.url);
   });
   handle('page:open-page', (event, payload: { page: InternalPage }) => {
     if (!(INTERNAL_PAGES as readonly string[]).includes(payload.page)) {
-      throw new Error('pagina sconosciuta');
+      throw new Error('unknown page');
     }
     windowOf(event).loadUrl(internalUrl(payload.page));
   });
@@ -333,14 +336,14 @@ export function registerIpc(ctx: AppContext): void {
     windowOf(event).loadUrl(buildSearchUrl(effective, ctx.engine.getStatus(), payload.query));
   });
   handle('page:open-new-tab', (event, payload: { url: string }) => {
-    if (!/^(https?|lomesearch):/i.test(payload.url)) throw new Error('schema non consentito');
+    if (!/^(https?|lomesearch):/i.test(payload.url)) throw new Error('scheme not allowed');
     windowOf(event).createTab(payload.url);
   });
   handle('page:copy', (_event, payload: { text: string }) => clipboard.writeText(payload.text));
   handle('page:titles', () => PAGE_TITLES);
 
   handle('shell:open-external', async (_event, payload: { url: string }) => {
-    if (!/^(https?|mailto):/i.test(payload.url)) throw new Error('schema non consentito');
+    if (!/^(https?|mailto):/i.test(payload.url)) throw new Error('scheme not allowed');
     await shell.openExternal(payload.url);
   });
 
@@ -365,6 +368,7 @@ export function registerIpc(ctx: AppContext): void {
       case 'extensions':
       case 'settings':
       case 'privacy':
+      case 'legal':
       case 'about':
         controller.createTab(internalUrl(payload.command));
         break;
@@ -394,6 +398,9 @@ export function registerIpc(ctx: AppContext): void {
         break;
       case 'mute':
         controller.toggleMute();
+        break;
+      case 'freeze-inactive':
+        void controller.freezeInactive();
         break;
       case 'reload':
         controller.reload(false);

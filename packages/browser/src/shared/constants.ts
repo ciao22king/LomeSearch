@@ -10,25 +10,31 @@ export const INTERNAL_PAGES = [
   'downloads',
   'extensions',
   'privacy',
+  'legal',
   'about',
+  'error',
 ] as const;
 
 export type InternalPage = (typeof INTERNAL_PAGES)[number];
 
 export const PAGE_TITLES: Record<InternalPage, string> = {
-  newtab: 'Nuova scheda',
-  settings: 'Impostazioni',
-  history: 'Cronologia',
-  bookmarks: 'Preferiti',
-  downloads: 'Download',
-  extensions: 'Estensioni',
+  newtab: 'New tab',
+  settings: 'Settings',
+  history: 'History',
+  bookmarks: 'Bookmarks',
+  downloads: 'Downloads',
+  extensions: 'Extensions',
   privacy: 'Privacy',
-  about: 'Informazioni',
+  legal: 'Legal',
+  about: 'About',
+  error: 'Page unavailable',
 };
 
-export const TAB_STRIP_HEIGHT = 38;
 export const TOOLBAR_HEIGHT = 48;
-export const CHROME_HEIGHT = TAB_STRIP_HEIGHT + TOOLBAR_HEIGHT;
+export const SIDEBAR_WIDTH = 268;
+export const SIDEBAR_COMPACT_WIDTH = 0;
+/** Vertical space the page leaves free at the top (the toolbar only). */
+export const CHROME_HEIGHT = TOOLBAR_HEIGHT;
 export const FIND_BAR_HEIGHT = 44;
 export const MAX_HISTORY_ENTRIES = 10_000;
 export const MAX_DOWNLOADS = 200;
@@ -41,6 +47,8 @@ export const SEARCH_ENGINES: Record<Exclude<SearchEngineId, 'local' | 'custom'>,
 
 export const DEFAULT_PRIVACY: PrivacySettings = {
   blockTrackers: true,
+  blockAds: true,
+  cosmeticFiltering: true,
   blockThirdPartyCookies: true,
   httpsFirst: true,
   sendDoNotTrack: true,
@@ -52,6 +60,8 @@ export const DEFAULT_PRIVACY: PrivacySettings = {
   spellchecker: false,
   clearOnExit: false,
   remoteBlocklist: '',
+  fakeIpEnabled: false,
+  fakeIpAddress: '',
 };
 
 export function defaultSettings(paths: { dataDir: string; downloadDir: string }): Settings {
@@ -62,8 +72,10 @@ export function defaultSettings(paths: { dataDir: string; downloadDir: string })
     homepage: 'lomesearch://newtab',
     startup: 'newtab',
     theme: 'system',
-    language: 'it',
+    language: 'en',
     privacy: { ...DEFAULT_PRIVACY },
+    appearance: { tabPreviews: true },
+    performance: { freezeAfterMinutes: 20 },
     engine: {
       autoStart: true,
       port: 7717,

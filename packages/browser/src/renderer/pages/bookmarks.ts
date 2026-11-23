@@ -12,28 +12,28 @@ import {
   toast,
 } from './common.js';
 
-const { main } = await initPage('bookmarks', 'Preferiti');
+const { main } = await initPage('bookmarks', 'Bookmarks');
 
 const search = el('input', {
   type: 'search',
-  placeholder: 'Filtra i preferiti',
-  'aria-label': 'Filtra i preferiti',
+  placeholder: 'Filter bookmarks',
+  'aria-label': 'Filter bookmarks',
 });
 const listCard = card(null, null);
-const addButton = button('Aggiungi la pagina corrente', async () => {
+const addButton = button('Add the current page', async () => {
   const state = await lome.app.state();
   const tab = state.tabs.find((item) => item.id === state.activeTabId);
   if (!tab || !/^https?:/i.test(tab.url)) {
-    toast('Apri una pagina web per salvarla');
+    toast('Open a web page to save it');
     return;
   }
   await lome.bookmarks.add(tab.url, tab.title);
-  toast('Preferito aggiunto');
+  toast('Bookmark added');
   await render();
 }, 'primary');
 
 main.append(
-  heading('Preferiti', 'Pagine salvate nel profilo locale.'),
+  heading('Bookmarks', 'Pages saved in the local profile.'),
   el(
     'div',
     { style: 'display:flex;gap:10px;align-items:center;margin-bottom:18px' },
@@ -61,8 +61,8 @@ async function render(): Promise<void> {
       el(
         'div',
         { class: 'empty' },
-        el('strong', {}, needle ? 'Nessun preferito corrisponde' : 'Nessun preferito'),
-        needle ? 'Prova con un altro termine.' : 'Usa la stella nella barra degli indirizzi o Ctrl+D.',
+        el('strong', {}, needle ? 'No bookmark matches' : 'No bookmarks'),
+        needle ? 'Try another term.' : 'Use the star in the address bar or Ctrl+D.',
       ),
     );
     return;
@@ -84,12 +84,12 @@ async function render(): Promise<void> {
         el(
           'div',
           { class: 'actions' },
-          button('Apri', () => lome.navigate(bookmark.url), 'small'),
-          button('Copia', async () => {
+          button('Open', () => lome.navigate(bookmark.url), 'small'),
+          button('Copy', async () => {
             await lome.copy(bookmark.url);
-            toast('Indirizzo copiato');
+            toast('Address copied');
           }, 'small'),
-          button('Rimuovi', async () => {
+          button('Remove', async () => {
             await lome.bookmarks.remove(bookmark.url);
             await render();
           }, 'small'),

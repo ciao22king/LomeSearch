@@ -1,0 +1,16 @@
+LomeSearch
+Copyright 2026 the LomeSearch author
+
+This product includes software developed by third parties:
+
+- Electron (https://www.electronjs.org), MIT licence
+- Chromium (https://www.chromium.org), BSD-style licences
+- Node.js (https://nodejs.org), MIT licence
+- TypeScript (https://www.typescriptlang.org), Apache-2.0
+- esbuild (https://esbuild.github.io), MIT licence
+
+The built-in blocklists and cosmetic filter rules are original to this project
+and are not derived from EasyList or another third-party list.
+
+LomeSearch is a personal project, not a company or office product, and is
+provided without warranty under the Apache License 2.0.

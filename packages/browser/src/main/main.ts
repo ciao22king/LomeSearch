@@ -84,7 +84,7 @@ if (!app.requestSingleInstanceLock()) {
         applicationName: 'LomeSearch',
         applicationVersion: app.getVersion(),
         copyright: 'Apache-2.0',
-        credits: 'Motore di ricerca locale, senza tracciamento.',
+        credits: 'Local search engine, no tracking.',
       });
 
       await context.initialise();

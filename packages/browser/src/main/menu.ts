@@ -50,23 +50,23 @@ export function buildAppMenu(ctx: MenuContext): Menu {
     label: 'File',
     submenu: [
       {
-        label: 'Nuova scheda',
+        label: 'New tab',
         accelerator: 'CmdOrCtrl+T',
         click: () => win()?.createTab(),
       },
       {
-        label: 'Nuova finestra',
+        label: 'New window',
         accelerator: 'CmdOrCtrl+N',
         click: () => ctx.newWindow(false),
       },
       {
-        label: 'Finestra privata',
+        label: 'Private window',
         accelerator: 'CmdOrCtrl+Shift+N',
         click: () => ctx.newWindow(true),
       },
       { type: 'separator' },
       {
-        label: 'Chiudi scheda',
+        label: 'Close tab',
         accelerator: 'CmdOrCtrl+W',
         click: () => {
           const controller = win();
@@ -75,34 +75,34 @@ export function buildAppMenu(ctx: MenuContext): Menu {
         },
       },
       {
-        label: 'Riapri scheda chiusa',
+        label: 'Reopen closed tab',
         accelerator: 'CmdOrCtrl+Shift+T',
         click: () => win()?.reopenClosedTab(),
       },
       {
-        label: 'Scheda successiva',
+        label: 'Next tab',
         accelerator: 'Ctrl+Tab',
         click: () => win()?.tabs.cycle(1),
       },
       {
-        label: 'Scheda precedente',
+        label: 'Previous tab',
         accelerator: 'Ctrl+Shift+Tab',
         click: () => win()?.tabs.cycle(-1),
       },
       { type: 'separator' },
       {
-        label: 'Salva pagina con nome…',
+        label: 'Save page as…',
         accelerator: 'CmdOrCtrl+S',
         click: () => win()?.savePage(),
       },
       {
-        label: 'Stampa…',
+        label: 'Print…',
         accelerator: 'CmdOrCtrl+P',
         click: () => win()?.printPage(),
       },
       { type: 'separator' },
       {
-        label: 'Esci',
+        label: 'Quit',
         accelerator: 'CmdOrCtrl+Q',
         click: () => ctx.quit(),
       },
@@ -110,29 +110,29 @@ export function buildAppMenu(ctx: MenuContext): Menu {
   });
 
   template.push({
-    label: 'Modifica',
+    label: 'Edit',
     submenu: [
-      { role: 'undo', label: 'Annulla' },
-      { role: 'redo', label: 'Ripeti' },
+      { role: 'undo', label: 'Undo' },
+      { role: 'redo', label: 'Redo' },
       { type: 'separator' },
-      { role: 'cut', label: 'Taglia' },
-      { role: 'copy', label: 'Copia' },
-      { role: 'paste', label: 'Incolla' },
-      { role: 'pasteAndMatchStyle', label: 'Incolla senza formattazione' },
-      { role: 'selectAll', label: 'Seleziona tutto' },
+      { role: 'cut', label: 'Cut' },
+      { role: 'copy', label: 'Copy' },
+      { role: 'paste', label: 'Paste' },
+      { role: 'pasteAndMatchStyle', label: 'Paste and match style' },
+      { role: 'selectAll', label: 'Select all' },
       { type: 'separator' },
       {
-        label: 'Trova nella pagina',
+        label: 'Find in page',
         accelerator: 'CmdOrCtrl+F',
         click: () => win()?.focusFindBar(),
       },
       {
-        label: 'Trova successivo',
+        label: 'Find next',
         accelerator: 'CmdOrCtrl+G',
         click: () => win()?.findNext(),
       },
       {
-        label: 'Trova precedente',
+        label: 'Find previous',
         accelerator: 'CmdOrCtrl+Shift+G',
         click: () => win()?.findPrevious(),
       },
@@ -140,26 +140,26 @@ export function buildAppMenu(ctx: MenuContext): Menu {
   });
 
   template.push({
-    label: 'Visualizza',
+    label: 'View',
     submenu: [
       {
-        label: 'Ricarica',
+        label: 'Reload',
         accelerator: 'CmdOrCtrl+R',
         click: () => win()?.reload(false),
       },
       {
-        label: 'Ricarica senza cache',
+        label: 'Reload ignoring cache',
         accelerator: 'CmdOrCtrl+Shift+R',
         click: () => win()?.reload(true),
       },
       { type: 'separator' },
-      { label: 'Zoom avanti', accelerator: 'CmdOrCtrl+Plus', click: () => win()?.zoom(1) },
-      { label: 'Zoom indietro', accelerator: 'CmdOrCtrl+-', click: () => win()?.zoom(-1) },
-      { label: 'Zoom 100%', accelerator: 'CmdOrCtrl+0', click: () => win()?.zoom(0) },
+      { label: 'Zoom in', accelerator: 'CmdOrCtrl+Plus', click: () => win()?.zoom(1) },
+      { label: 'Zoom out', accelerator: 'CmdOrCtrl+-', click: () => win()?.zoom(-1) },
+      { label: 'Actual size', accelerator: 'CmdOrCtrl+0', click: () => win()?.zoom(0) },
       { type: 'separator' },
-      { label: 'Schermo intero', accelerator: 'F11', click: () => win()?.toggleFullScreen() },
+      { label: 'Full screen', accelerator: 'F11', click: () => win()?.toggleFullScreen() },
       {
-        label: 'Strumenti per sviluppatori',
+        label: 'Developer tools',
         accelerator: 'CmdOrCtrl+Shift+I',
         click: () => win()?.toggleDevTools(),
       },
@@ -167,50 +167,51 @@ export function buildAppMenu(ctx: MenuContext): Menu {
   });
 
   template.push({
-    label: 'Vai',
+    label: 'Go',
     submenu: [
-      { label: 'Indietro', accelerator: 'Alt+Left', click: () => win()?.back() },
-      { label: 'Avanti', accelerator: 'Alt+Right', click: () => win()?.forward() },
+      { label: 'Back', accelerator: 'Alt+Left', click: () => win()?.back() },
+      { label: 'Forward', accelerator: 'Alt+Right', click: () => win()?.forward() },
       {
         label: 'Home',
         accelerator: 'Alt+Home',
         click: () => win()?.goHome(),
       },
       {
-        label: 'Barra degli indirizzi',
+        label: 'Address bar',
         accelerator: 'CmdOrCtrl+L',
         click: () => win()?.focusOmnibox(),
       },
       { type: 'separator' },
-      { label: 'Preferiti', accelerator: 'CmdOrCtrl+Shift+O', click: () => page('bookmarks') },
-      { label: 'Cronologia', accelerator: 'CmdOrCtrl+H', click: () => page('history') },
-      { label: 'Download', accelerator: 'CmdOrCtrl+J', click: () => page('downloads') },
-      { label: 'Estensioni', click: () => page('extensions') },
+      { label: 'Bookmarks', accelerator: 'CmdOrCtrl+Shift+O', click: () => page('bookmarks') },
+      { label: 'History', accelerator: 'CmdOrCtrl+H', click: () => page('history') },
+      { label: 'Downloads', accelerator: 'CmdOrCtrl+J', click: () => page('downloads') },
+      { label: 'Extensions', click: () => page('extensions') },
       { label: 'Privacy', click: () => page('privacy') },
       { type: 'separator' },
-      { label: 'Impostazioni', accelerator: 'CmdOrCtrl+,', click: () => page('settings') },
+      { label: 'Settings', accelerator: 'CmdOrCtrl+,', click: () => page('settings') },
     ],
   });
 
   template.push({
-    label: 'Preferiti',
+    label: 'Bookmarks',
     submenu: [
       {
-        label: 'Aggiungi o rimuovi preferito',
+        label: 'Bookmark this page',
         accelerator: 'CmdOrCtrl+D',
         click: () => win()?.toggleBookmark(),
       },
-      { label: 'Gestisci preferiti', click: () => page('bookmarks') },
+      { label: 'Manage bookmarks', click: () => page('bookmarks') },
     ],
   });
 
   template.push({
-    label: 'Aiuto',
+    label: 'Help',
     submenu: [
-      { label: 'Informazioni su LomeSearch', click: () => ctx.showAbout() },
-      { label: 'Privacy e dati locali', click: () => page('privacy') },
+      { label: 'About LomeSearch', click: () => ctx.showAbout() },
+      { label: 'Privacy and local data', click: () => page('privacy') },
+      { label: 'Legal and licences', click: () => page('legal') },
       {
-        label: 'Documentazione',
+        label: 'Documentation',
         click: () => void shell.openExternal('https://github.com/ciao22king/LomeSearch'),
       },
     ],

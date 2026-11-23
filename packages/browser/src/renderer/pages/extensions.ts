@@ -11,33 +11,33 @@ import {
   toast,
 } from './common.js';
 
-const { main } = await initPage('extensions', 'Estensioni');
+const { main } = await initPage('extensions', 'Extensions');
 
 const listCard = card(null, null);
 
 main.append(
-  heading('Estensioni', 'LomeSearch carica estensioni Chrome non pacchettizzate da una cartella locale.'),
+  heading('Extensions', 'LomeSearch loads unpacked Chrome extensions from a local folder.'),
   card(
-    'Come funziona',
+    'How it works',
     null,
     el(
       'p',
       { class: 'small muted', style: 'margin:0 0 10px' },
-      'Electron implementa un sottoinsieme delle API di Chrome: content script, blocca-annunci, lettori, gestori di password e molte estensioni di interfaccia funzionano. Le API esclusive del Chrome Web Store e alcune API privileged non sono disponibili.',
+      'Electron implements a subset of the Chrome APIs: content scripts, ad blockers, readers, password managers and many interface extensions work. Chrome Web Store only APIs and some privileged APIs are not available.',
     ),
     el(
       'p',
       { class: 'small muted', style: 'margin:0' },
-      'Per installare: scarica o clona l’estensione, apri la sua cartella (quella con manifest.json) e caricala qui. Le estensioni restano disattivate nelle finestre private.',
+      'To install: download or clone the extension, pick its folder (the one with manifest.json) and load it here. Extensions stay disabled in private windows.',
     ),
   ),
   el(
     'div',
     { style: 'display:flex;gap:10px;margin-bottom:18px' },
-    button('Carica estensione non pacchettizzata', async () => {
+    button('Load unpacked extension', async () => {
       const items = await lome.extensions.load();
       render(items);
-      toast('Estensione caricata');
+      toast('Extension loaded');
     }, 'primary'),
   ),
   listCard,
@@ -50,8 +50,8 @@ function render(items: ExtensionInfo[]): void {
       el(
         'div',
         { class: 'empty' },
-        el('strong', {}, 'Nessuna estensione caricata'),
-        'Le estensioni compatibili compaiono qui.',
+        el('strong', {}, 'No extension loaded'),
+        'Compatible extensions appear here.',
       ),
     );
     return;
@@ -61,27 +61,27 @@ function render(items: ExtensionInfo[]): void {
   for (const extension of items) {
     const status = extension.error
       ? el('span', { class: 'pill warn' }, extension.error)
-      : el('span', { class: 'pill' }, 'attiva');
+      : el('span', { class: 'pill' }, 'active');
 
     const actions = el('div', { class: 'actions' });
     if (extension.enabled) {
       actions.append(
-        button('Disattiva', async () => {
+        button('Disable', async () => {
           render(await lome.extensions.toggle(extension.path, false));
         }, 'small'),
       );
-    } else if (!extension.error?.includes('non trovata')) {
+    } else if (!extension.error?.includes('not found')) {
       actions.append(
-        button('Attiva', async () => {
+        button('Enable', async () => {
           render(await lome.extensions.toggle(extension.path, true));
         }, 'small'),
       );
     }
     actions.append(
-      button('Cartella', () => lome.extensions.reveal(extension.path), 'small'),
-      button('Rimuovi', async () => {
+      button('Folder', () => lome.extensions.reveal(extension.path), 'small'),
+      button('Remove', async () => {
         render(await lome.extensions.remove(extension.path));
-        toast('Estensione rimossa');
+        toast('Extension removed');
       }, 'small'),
     );
 

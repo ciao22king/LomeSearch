@@ -12,20 +12,20 @@ import {
   toast,
 } from './common.js';
 
-const { main } = await initPage('downloads', 'Download');
+const { main } = await initPage('downloads', 'Downloads');
 
 const listCard = card(null, null);
 
 main.append(
-  heading('Download', 'I file restano sul computer; nessun servizio esterno li riceve.'),
+  heading('Downloads', 'Files stay on this computer; no external service receives them.'),
   el(
     'div',
     { style: 'display:flex;gap:10px;margin-bottom:18px' },
-    button('Cancella completati', async () => {
+    button('Clear completed', async () => {
       await lome.downloads.clear();
-      toast('Elenco ripulito');
+      toast('List cleared');
     }, 'small'),
-    button('Apri cartella download', () => lome.app.openDownloadsDir(), 'small'),
+    button('Open downloads folder', () => lome.app.openDownloadsDir(), 'small'),
   ),
   listCard,
 );
@@ -33,12 +33,12 @@ main.append(
 function label(item: DownloadState): string {
   if (item.state === 'progressing') {
     return item.total > 0
-      ? `${Math.round((item.received / item.total) * 100)}% di ${formatBytes(item.total)}`
-      : `${formatBytes(item.received)} scaricati`;
+      ? `${Math.round((item.received / item.total) * 100)}% of ${formatBytes(item.total)}`
+      : `${formatBytes(item.received)} downloaded`;
   }
-  if (item.state === 'completed') return `completato · ${formatBytes(item.total || item.received)}`;
-  if (item.state === 'cancelled') return 'Annullato';
-  return 'Interrotto';
+  if (item.state === 'completed') return `completed · ${formatBytes(item.total || item.received)}`;
+  if (item.state === 'cancelled') return 'Cancelled';
+  return 'Interrupted';
 }
 
 function render(items: DownloadState[]): void {
@@ -48,8 +48,8 @@ function render(items: DownloadState[]): void {
       el(
         'div',
         { class: 'empty' },
-        el('strong', {}, 'Nessun download'),
-        'I file scaricati compariranno qui.',
+        el('strong', {}, 'No downloads'),
+        'Downloaded files will appear here.',
       ),
     );
     return;
@@ -60,22 +60,22 @@ function render(items: DownloadState[]): void {
     const actions = el('div', { class: 'actions' });
     if (item.state === 'progressing') {
       actions.append(
-        button('Pausa', async () => {
+        button('Pause', async () => {
           await lome.downloads.pause(item.id);
         }, 'small'),
-        button('Annulla', async () => {
+        button('Cancel', async () => {
           await lome.downloads.cancel(item.id);
         }, 'small'),
       );
     }
     if (item.state === 'completed') {
       actions.append(
-        button('Apri', () => lome.downloads.open(item.id), 'small'),
-        button('Mostra', () => lome.downloads.show(item.id), 'small'),
+        button('Open', () => lome.downloads.open(item.id), 'small'),
+        button('Show', () => lome.downloads.show(item.id), 'small'),
       );
     }
     if (item.state === 'interrupted') {
-      actions.append(button('Mostra', () => lome.downloads.show(item.id), 'small'));
+      actions.append(button('Show', () => lome.downloads.show(item.id), 'small'));
     }
 
     const progress = el('div', { class: 'progress' });

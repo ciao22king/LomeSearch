@@ -52,18 +52,18 @@ export function installInternalProtocol(ses: Session, rendererRoot: string): voi
     try {
       url = new URL(request.url);
     } catch {
-      return textResponse(400, 'richiesta non valida');
+      return textResponse(400, 'invalid request');
     }
     const page = url.hostname;
-    if (!isInternalPage(page)) return textResponse(404, 'pagina non trovata');
+    if (!isInternalPage(page)) return textResponse(404, 'page not found');
 
     const relative = url.pathname === '/' ? `/pages/${page}.html` : url.pathname;
     if (!relative.startsWith('/pages/') && !relative.startsWith('/assets/')) {
-      return textResponse(404, 'risorsa non trovata');
+      return textResponse(404, 'asset not found');
     }
     const filePath = resolve(join(root, relative));
     if (!filePath.startsWith(`${root}/`) && filePath !== root) {
-      return textResponse(403, 'accesso negato');
+      return textResponse(403, 'access denied');
     }
     try {
       const data = await readFile(filePath);
@@ -75,7 +75,7 @@ export function installInternalProtocol(ses: Session, rendererRoot: string): voi
         },
       });
     } catch {
-      return textResponse(404, 'risorsa non trovata');
+      return textResponse(404, 'asset not found');
     }
   });
 }

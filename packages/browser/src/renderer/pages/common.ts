@@ -10,7 +10,7 @@ export const lome = (window as unknown as { lome: LomeApi }).lome;
 
 export function $<T extends HTMLElement>(selector: string): T {
   const element = document.querySelector(selector);
-  if (!element) throw new Error(`elemento mancante: ${selector}`);
+  if (!element) throw new Error(`missing element: ${selector}`);
   return element as T;
 }
 
@@ -47,13 +47,14 @@ export function clear(node: HTMLElement): void {
 }
 
 const NAV: Array<{ page: string; label: string; href: string }> = [
-  { page: 'history', label: 'Cronologia', href: 'lomesearch://history' },
-  { page: 'bookmarks', label: 'Preferiti', href: 'lomesearch://bookmarks' },
-  { page: 'downloads', label: 'Download', href: 'lomesearch://downloads' },
-  { page: 'extensions', label: 'Estensioni', href: 'lomesearch://extensions' },
+  { page: 'history', label: 'History', href: 'lomesearch://history' },
+  { page: 'bookmarks', label: 'Bookmarks', href: 'lomesearch://bookmarks' },
+  { page: 'downloads', label: 'Downloads', href: 'lomesearch://downloads' },
+  { page: 'extensions', label: 'Extensions', href: 'lomesearch://extensions' },
   { page: 'privacy', label: 'Privacy', href: 'lomesearch://privacy' },
-  { page: 'settings', label: 'Impostazioni', href: 'lomesearch://settings' },
-  { page: 'about', label: 'Informazioni', href: 'lomesearch://about' },
+  { page: 'settings', label: 'Settings', href: 'lomesearch://settings' },
+  { page: 'legal', label: 'Legal', href: 'lomesearch://legal' },
+  { page: 'about', label: 'About', href: 'lomesearch://about' },
 ];
 
 export interface PageHandle {
@@ -223,15 +224,15 @@ export function toast(message: string): void {
 
 export function timeAgo(timestamp: number): string {
   const seconds = Math.round((Date.now() - timestamp) / 1000);
-  if (seconds < 60) return 'adesso';
+  if (seconds < 60) return 'just now';
   const minutes = Math.round(seconds / 60);
-  if (minutes < 60) return `${minutes} min fa`;
+  if (minutes < 60) return `${minutes} min ago`;
   const hours = Math.round(minutes / 60);
-  if (hours < 24) return `${hours} h fa`;
+  if (hours < 24) return `${hours} h ago`;
   const days = Math.round(hours / 24);
-  if (days === 1) return 'ieri';
-  if (days < 30) return `${days} giorni fa`;
-  return new Date(timestamp).toLocaleDateString('it-IT', {
+  if (days === 1) return 'yesterday';
+  if (days < 30) return `${days} days ago`;
+  return new Date(timestamp).toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
@@ -244,9 +245,9 @@ export function dayLabel(timestamp: number): string {
   const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
   const startOfDay = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
   const diff = Math.round((startOfToday - startOfDay) / 86_400_000);
-  if (diff === 0) return 'Oggi';
-  if (diff === 1) return 'Ieri';
-  return date.toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  if (diff === 0) return 'Today';
+  if (diff === 1) return 'Yesterday';
+  return date.toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 }
 
 export function formatBytes(bytes: number): string {

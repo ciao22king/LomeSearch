@@ -36,17 +36,17 @@ export function showContextMenu(
 
   if (params.linkURL) {
     items.push(
-      { label: 'Apri link in nuova scheda', click: () => win.createTab(params.linkURL) },
+      { label: 'Open link in new tab', click: () => win.createTab(params.linkURL) },
       {
-        label: 'Apri link in finestra privata',
+        label: 'Open link in private window',
         click: () => ctx.openUrlInNewWindow(params.linkURL, true),
       },
       {
-        label: 'Copia indirizzo del link',
+        label: 'Copy link address',
         click: () => clipboard.writeText(params.linkURL),
       },
       {
-        label: 'Cerca il link nell’indice locale',
+        label: 'Search the link in the local index',
         click: () => win.createTab(localSearch(params.linkURL)),
       },
       { type: 'separator' },
@@ -55,10 +55,10 @@ export function showContextMenu(
 
   if (params.mediaType === 'image' && params.srcURL) {
     items.push(
-      { label: 'Apri immagine in nuova scheda', click: () => win.createTab(params.srcURL) },
-      { label: 'Copia indirizzo immagine', click: () => clipboard.writeText(params.srcURL) },
+      { label: 'Open image in new tab', click: () => win.createTab(params.srcURL) },
+      { label: 'Copy image address', click: () => clipboard.writeText(params.srcURL) },
       {
-        label: 'Salva immagine con nome…',
+        label: 'Save image as…',
         click: () => tab.webContents.downloadURL(params.srcURL),
       },
       { type: 'separator' },
@@ -69,13 +69,13 @@ export function showContextMenu(
     const selection = params.selectionText.trim();
     const short = selection.length > 40 ? `${selection.slice(0, 40)}…` : selection;
     items.push(
-      { role: 'copy', label: 'Copia' },
+      { role: 'copy', label: 'Copy' },
       {
-        label: `Cerca “${short}” con ${settings.searchEngine === 'local' ? 'LomeSearch' : 'il motore predefinito'}`,
+        label: `Search “${short}” with ${settings.searchEngine === 'local' ? 'LomeSearch' : 'the default engine'}`,
         click: () => win.createTab(buildSearchUrl(settings, status, selection)),
       },
       {
-        label: 'Cerca nell’indice locale',
+        label: 'Search the local index',
         click: () => win.createTab(localSearch(selection)),
       },
       { type: 'separator' },
@@ -84,13 +84,13 @@ export function showContextMenu(
 
   if (params.isEditable) {
     items.push(
-      { role: 'undo', label: 'Annulla' },
-      { role: 'redo', label: 'Ripeti' },
+      { role: 'undo', label: 'Undo' },
+      { role: 'redo', label: 'Redo' },
       { type: 'separator' },
-      { role: 'cut', label: 'Taglia' },
-      { role: 'copy', label: 'Copia' },
-      { role: 'paste', label: 'Incolla' },
-      { role: 'selectAll', label: 'Seleziona tutto' },
+      { role: 'cut', label: 'Cut' },
+      { role: 'copy', label: 'Copy' },
+      { role: 'paste', label: 'Paste' },
+      { role: 'selectAll', label: 'Select all' },
       { type: 'separator' },
     );
   }
@@ -102,7 +102,7 @@ export function showContextMenu(
   const bookmarked = ctx.store.isBookmarked(tab.url);
   items.push(
     {
-      label: bookmarked ? 'Rimuovi dai preferiti' : 'Aggiungi ai preferiti',
+      label: bookmarked ? 'Remove bookmark' : 'Bookmark this page',
       click: () => {
         if (bookmarked) ctx.store.removeBookmark(tab.url);
         else ctx.store.addBookmark(tab.url, tab.title);
@@ -110,17 +110,17 @@ export function showContextMenu(
       },
     },
     {
-      label: 'Copia indirizzo della pagina',
+      label: 'Copy page address',
       enabled: Boolean(tab.url),
       click: () => clipboard.writeText(tab.url),
     },
     { type: 'separator' },
-    { label: 'Indietro', enabled: tab.webContents.navigationHistory.canGoBack(), click: () => win.back() },
-    { label: 'Avanti', enabled: tab.webContents.navigationHistory.canGoForward(), click: () => win.forward() },
-    { label: 'Ricarica', click: () => win.reload(false) },
+    { label: 'Back', enabled: tab.webContents.navigationHistory.canGoBack(), click: () => win.back() },
+    { label: 'Forward', enabled: tab.webContents.navigationHistory.canGoForward(), click: () => win.forward() },
+    { label: 'Reload', click: () => win.reload(false) },
     { type: 'separator' },
     {
-      label: 'Ispeziona elemento',
+      label: 'Inspect element',
       click: () => {
         tab.webContents.inspectElement(params.x, params.y);
       },

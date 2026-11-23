@@ -7,6 +7,11 @@ import type { TabState } from '../shared/types.js';
  * Each tab is a WebContentsView with its own renderer process. The chrome UI
  * lives in a separate view owned by the window, so a crashed or hung page never
  * takes the browser interface down with it.
+ *
+ * A tab can be frozen: its view is destroyed, URL and title stay, and the page
+ * is reloaded when the tab is selected again. That is what makes idle tabs
+ * cheap: no renderer, no timers, no document in memory. The scroll offset
+ * survives a freeze and is restored after the reload.
  */
 
 export interface TabEvents {
@@ -23,28 +28,135 @@ export interface TabEvents {
 
 export class Tab {
   readonly id: number;
-  readonly view: WebContentsView;
   readonly isPrivate: boolean;
-  title = 'Nuova scheda';
+  view: WebContentsView | null = null;
+  title = '';
   url = '';
   favicon = '';
   loading = false;
   crashed = false;
   blocked = 0;
+  frozen = false;
+  hasPreview = false;
+  lastActive = Date.now();
+
+  private scroll: { x: number; y: number } | null = null;
 
   constructor(
     id: number,
-    session: Session,
-    preloadPath: string,
+    private readonly session: Session,
+    private readonly preloadPath: string,
     isPrivate: boolean,
     private readonly events: TabEvents,
   ) {
     this.id = id;
     this.isPrivate = isPrivate;
+    this.ensureView();
+  }
+
+  get webContents(): WebContents {
+    if (!this.view) throw new Error('tab is frozen');
+    return this.view.webContents;
+  }
+
+  get contents(): WebContents | null {
+    return this.view ? this.view.webContents : null;
+  }
+
+  get live(): boolean {
+    return this.view !== null;
+  }
+
+  load(url: string): void {
+    this.url = url;
+    this.ensureView();
+    void this.webContents.loadURL(url).catch(() => {
+      // Failures surface through did-fail-load; this catch only silences the
+      // rejected promise that Electron returns for aborted navigations.
+    });
+  }
+
+  state(): TabState {
+    const contents = this.contents;
+    const alive = contents !== null && !contents.isDestroyed();
+    return {
+      id: this.id,
+      url: this.url,
+      title: this.title,
+      favicon: this.favicon,
+      loading: this.loading,
+      canGoBack: alive ? contents.navigationHistory.canGoBack() : false,
+      canGoForward: alive ? contents.navigationHistory.canGoForward() : false,
+      isPrivate: this.isPrivate,
+      blocked: this.blocked,
+      audible: alive ? contents.isCurrentlyAudible() : false,
+      muted: alive ? contents.isAudioMuted() : false,
+      crashed: this.crashed,
+      frozen: this.frozen,
+      hasPreview: this.hasPreview,
+      lastActive: this.lastActive,
+    };
+  }
+
+  /** Reads the scroll offset so a thaw can put the page back where it was. */
+  async rememberScroll(): Promise<void> {
+    if (!this.view || this.view.webContents.isDestroyed()) return;
+    try {
+      const position = (await this.webContents.executeJavaScript('({ x: scrollX, y: scrollY })', true)) as {
+        x?: number;
+        y?: number;
+      };
+      if (typeof position?.x === 'number' && typeof position?.y === 'number') {
+        this.scroll = { x: position.x, y: position.y };
+      }
+    } catch {
+      // Pages that refuse script injection simply lose the offset.
+    }
+  }
+
+  freeze(): void {
+    if (!this.view) return;
+    try {
+      this.webContents.close();
+    } catch {
+      // Already gone.
+    }
+    this.view = null;
+    this.frozen = true;
+    this.loading = false;
+    this.events.onChanged(this);
+  }
+
+  thaw(): void {
+    if (this.view) return;
+    this.frozen = false;
+    this.ensureView();
+    if (this.scroll) {
+      const { x, y } = this.scroll;
+      this.scroll = null;
+      this.webContents.once('did-finish-load', () => {
+        void this.webContents.executeJavaScript(`scrollTo(${x}, ${y})`, true).catch(() => {});
+      });
+    }
+    if (this.url) this.load(this.url);
+    this.events.onChanged(this);
+  }
+
+  destroy(): void {
+    try {
+      this.view?.webContents.close();
+    } catch {
+      // Already destroyed.
+    }
+    this.view = null;
+  }
+
+  private ensureView(): WebContentsView {
+    if (this.view) return this.view;
     this.view = new WebContentsView({
       webPreferences: {
-        preload: preloadPath,
-        session,
+        preload: this.preloadPath,
+        session: this.session,
         sandbox: true,
         contextIsolation: true,
         nodeIntegration: false,
@@ -59,43 +171,7 @@ export class Tab {
     });
     this.view.setBackgroundColor('#ffffff');
     this.wire();
-  }
-
-  get webContents(): WebContents {
-    return this.view.webContents;
-  }
-
-  load(url: string): void {
-    void this.webContents.loadURL(url).catch(() => {
-      // Failures surface through did-fail-load; this catch only silences the
-      // rejected promise that Electron returns for aborted navigations.
-    });
-  }
-
-  state(): TabState {
-    const history = this.webContents.navigationHistory;
-    return {
-      id: this.id,
-      url: this.url,
-      title: this.title,
-      favicon: this.favicon,
-      loading: this.loading,
-      canGoBack: history.canGoBack(),
-      canGoForward: history.canGoForward(),
-      isPrivate: this.isPrivate,
-      blocked: this.blocked,
-      audible: this.webContents.isCurrentlyAudible(),
-      muted: this.webContents.isAudioMuted(),
-      crashed: this.crashed,
-    };
-  }
-
-  destroy(): void {
-    try {
-      this.webContents.close();
-    } catch {
-      // Already destroyed.
-    }
+    return this.view;
   }
 
   private wire(): void {
@@ -171,6 +247,13 @@ export interface ClosedTab {
   title: string;
 }
 
+export interface CreateTabOptions {
+  background?: boolean;
+  index?: number;
+  /** Create the tab without a renderer; the page loads when it is selected. */
+  lazy?: boolean;
+}
+
 export class TabManager {
   private tabs: Tab[] = [];
   private activeId: number | null = null;
@@ -197,19 +280,28 @@ export class TabManager {
   }
 
   byWebContentsId(id: number): Tab | undefined {
-    return this.tabs.find((tab) => !tab.webContents.isDestroyed() && tab.webContents.id === id);
+    return this.tabs.find((tab) => tab.contents !== null && !tab.contents.isDestroyed() && tab.contents.id === id);
   }
 
   activeIdValue(): number | null {
     return this.activeId;
   }
 
-  create(url: string, options: { background?: boolean; index?: number } = {}): Tab {
+  create(url: string, options: CreateTabOptions = {}): Tab {
     const tab = new Tab(this.nextId++, this.session, this.preloadPath, this.isPrivate, this.events);
     const index = options.index ?? this.tabs.length;
     this.tabs.splice(index, 0, tab);
-    tab.load(url);
-    if (!options.background) this.activeId = tab.id;
+    if (options.lazy) {
+      tab.url = url;
+      tab.frozen = true;
+      tab.destroy();
+    } else {
+      tab.load(url);
+    }
+    if (!options.background) {
+      this.activeId = tab.id;
+      tab.lastActive = Date.now();
+    }
     this.events.onChanged(tab);
     return tab;
   }
@@ -236,6 +328,7 @@ export class TabManager {
     const tab = this.get(id);
     if (!tab || this.activeId === id) return;
     this.activeId = id;
+    tab.lastActive = Date.now();
     this.events.onChanged(tab);
   }
 

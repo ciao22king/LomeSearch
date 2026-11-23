@@ -1,11 +1,11 @@
 import { button, card, el, initPage, lome, shorten, timeAgo, toast } from './common.js';
 
-const { main } = await initPage('newtab', 'Nuova scheda');
+const { main } = await initPage('newtab', 'New tab');
 
 const searchInput = el('input', {
   type: 'search',
-  placeholder: 'Cerca nel web o nell’indice locale',
-  'aria-label': 'Cerca',
+  placeholder: 'Search the web or the local index',
+  'aria-label': 'Search',
   autofocus: true,
 });
 
@@ -19,7 +19,7 @@ const form = el(
     },
   },
   searchInput,
-  el('button', { class: 'btn primary', type: 'submit' }, 'Cerca'),
+  el('button', { class: 'btn primary', type: 'submit' }, 'Search'),
 );
 
 const localLink = el(
@@ -31,7 +31,7 @@ const localLink = el(
       if (query) void lome.search(query, true);
     },
   },
-  'Cerca solo nell’indice locale',
+  'Search the local index only',
 );
 
 main.append(
@@ -40,15 +40,15 @@ main.append(
     { class: 'hero' },
     el('div', { class: 'mark' }, 'Lome', el('span', {}, 'Search')),
     form,
-    el('div', { class: 'alt' }, 'Le query restano su questa macchina. ', localLink),
+    el('div', { class: 'alt' }, 'Queries stay on this machine. ', localLink),
   ),
 );
 
 const statsGrid = el('div', { class: 'stats-grid' });
 const privacyCard = card(null, null);
 const indexCard = card(
-  'Indice vuoto',
-  'Il motore locale è attivo ma non ha ancora documenti. Indicizza un sito per iniziare.',
+  'Empty index',
+  'The local engine is running but has no documents yet. Index a site to start.',
 );
 indexCard.append(
   el(
@@ -59,20 +59,20 @@ indexCard.append(
   el(
     'div',
     { style: 'display:flex;gap:8px;flex-wrap:wrap' },
-    button('Copia comandi', async () => {
+    button('Copy commands', async () => {
       await lome.copy('npm run cli -- crawl https://example.com --max-depth 2');
-      toast('Comando copiato');
+      toast('Command copied');
     }, 'small'),
     el(
       'a',
       { class: 'btn small', href: 'http://127.0.0.1:7717/', target: '_self' },
-      'Apri la pagina del motore',
+      'Open the engine page',
     ),
-    el('a', { class: 'btn small', href: 'lomesearch://settings' }, 'Impostazioni del motore'),
+    el('a', { class: 'btn small', href: 'lomesearch://settings' }, 'Engine settings'),
   ),
 );
-const shortcutsCard = card('Scorciatoie', 'Le pagine che hai salvato, pronte da aprire.');
-const recentCard = card('Riprese di recente', 'La cronologia resta nel profilo locale.');
+const shortcutsCard = card('Shortcuts', 'The pages you saved, ready to open.');
+const recentCard = card('Recently visited', 'History stays in the local profile.');
 
 main.append(
   statsGrid,
@@ -87,10 +87,10 @@ async function renderStats(): Promise<void> {
   const [engine, report] = await Promise.all([lome.engine.status(), lome.privacy.report()]);
   statsGrid.textContent = '';
   const items: Array<[string, string]> = [
-    [engine.documents.toLocaleString('it-IT'), 'documenti indicizzati'],
-    [engine.indexedTerms.toLocaleString('it-IT'), 'termini nell’indice'],
-    [report.summary.blockedSession.toLocaleString('it-IT'), 'richieste bloccate ora'],
-    [report.summary.blocklistSize.toLocaleString('it-IT'), 'regole nella lista'],
+    [engine.documents.toLocaleString('en-US'), 'documents indexed'],
+    [engine.indexedTerms.toLocaleString('en-US'), 'terms in the index'],
+    [report.summary.blockedSession.toLocaleString('en-US'), 'requests blocked now'],
+    [report.summary.blocklistSize.toLocaleString('en-US'), 'rules in the list'],
   ];
   for (const [value, name] of items) {
     statsGrid.append(el('div', { class: 'stat' }, el('div', { class: 'value' }, value), el('div', { class: 'name' }, name)));
@@ -105,20 +105,20 @@ async function renderStats(): Promise<void> {
       el(
         'div',
         { class: 'label' },
-        el('strong', {}, engine.running ? 'Motore locale attivo' : 'Motore locale non attivo'),
+        el('strong', {}, engine.running ? 'Local engine running' : 'Local engine stopped'),
         el(
           'small',
           {},
           engine.running
-            ? `${engine.origin} · ${engine.documents.toLocaleString('it-IT')} documenti · versione ${engine.version || '1.0.0'}`
-            : engine.error ?? 'Avvia il motore dalle impostazioni.',
+            ? `${engine.origin} · ${engine.documents.toLocaleString('en-US')} documents · version ${engine.version || '1.0.0'}`
+            : engine.error ?? 'Start the engine from settings.',
         ),
       ),
       el(
         'span',
         { class: `pill ${engine.running ? '' : 'warn'}` },
         el('span', { class: `dot ${engine.running ? 'on' : 'off'}` }),
-        engine.running ? 'attivo' : 'fermo',
+        engine.running ? 'running' : 'stopped',
       ),
     ),
     el(
@@ -127,17 +127,17 @@ async function renderStats(): Promise<void> {
       el(
         'div',
         { class: 'label' },
-        el('strong', {}, 'Tracciamento'),
+        el('strong', {}, 'Tracking'),
         el(
           'small',
           {},
-          `Bloccate ${report.summary.blockedTotal.toLocaleString('it-IT')} richieste in totale. Nessuna query viene registrata.`,
+          `Blocked ${report.summary.blockedTotal.toLocaleString('en-US')} requests in total. No query is logged.`,
         ),
       ),
       el(
         'a',
         { class: 'btn small', href: 'lomesearch://privacy' },
-        'Report privacy',
+        'Privacy report',
       ),
     ),
   );
@@ -152,12 +152,12 @@ async function renderShortcuts(): Promise<void> {
         'div',
         { class: 'shortcuts' },
         ...[
-          ['Cronologia', 'lomesearch://history'],
-          ['Preferiti', 'lomesearch://bookmarks'],
-          ['Download', 'lomesearch://downloads'],
-          ['Estensioni', 'lomesearch://extensions'],
+          ['History', 'lomesearch://history'],
+          ['Bookmarks', 'lomesearch://bookmarks'],
+          ['Downloads', 'lomesearch://downloads'],
+          ['Extensions', 'lomesearch://extensions'],
           ['Privacy', 'lomesearch://privacy'],
-          ['Impostazioni', 'lomesearch://settings'],
+          ['Settings', 'lomesearch://settings'],
         ].map(([label, href]) =>
           el(
             'a',
@@ -190,7 +190,7 @@ async function renderRecent(): Promise<void> {
   const entries = (await lome.history.list('', 6)).filter((entry) => !entry.url.startsWith('lomesearch://'));
   recentCard.textContent = '';
   if (entries.length === 0) {
-    recentCard.append(el('div', { class: 'empty' }, el('strong', {}, 'Nessuna pagina visitata'), 'La cronologia è vuota.'));
+    recentCard.append(el('div', { class: 'empty' }, el('strong', {}, 'No pages visited'), 'History is empty.'));
     return;
   }
   const list = el('ul', { class: 'list' });

@@ -1,4 +1,5 @@
 import { contextBridge, ipcRenderer, webFrame, type IpcRendererEvent } from 'electron';
+import { buildCosmeticCss } from '../shared/cosmetic.js';
 import { buildNoiseScript } from '../shared/fingerprint.js';
 import { buildWebRtcScript } from '../shared/page-guards.js';
 import type {
@@ -33,6 +34,7 @@ interface PageConfig {
   fingerprintProtection: boolean;
   fingerprintSeed: string;
   webrtcPolicy: 'disable' | 'public-interface' | 'default';
+  cosmeticFiltering: boolean;
   theme: 'system' | 'light' | 'dark';
   isPrivate: boolean;
   version: string;
@@ -41,6 +43,13 @@ interface PageConfig {
 const config = ipcRenderer.sendSync('page:config') as PageConfig;
 
 if (location.protocol !== 'lomesearch:') {
+  if (config.cosmeticFiltering) {
+    try {
+      void webFrame.insertCSS(buildCosmeticCss());
+    } catch {
+      // Cosmetic filtering is best effort; the network rules still apply.
+    }
+  }
   const guards: string[] = [];
   const webrtc = buildWebRtcScript(config.webrtcPolicy ?? 'disable');
   if (webrtc) guards.push(webrtc);

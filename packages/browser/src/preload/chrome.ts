@@ -31,6 +31,8 @@ const api: ChromeApi = {
   createTab: (url?: string, background?: boolean) =>
     ipcRenderer.invoke('tabs:create', { url, background }) as Promise<void>,
   closeTab: (id: number) => ipcRenderer.invoke('tabs:close', { id }) as Promise<void>,
+  freezeTab: (id: number) => ipcRenderer.invoke('tabs:freeze', { id }) as Promise<void>,
+  freezeInactive: () => ipcRenderer.invoke('tabs:freeze-inactive') as Promise<number>,
   selectTab: (id: number) => ipcRenderer.invoke('tabs:select', { id }) as Promise<void>,
   moveTab: (id: number, index: number) =>
     ipcRenderer.invoke('tabs:move', { id, index }) as Promise<void>,
@@ -50,6 +52,7 @@ const api: ChromeApi = {
   openPage: (page: string) =>
     ipcRenderer.invoke('tabs:create', { url: `lomesearch://${page}` }) as Promise<void>,
   onState: (callback) => subscribe<ChromeState>('chrome:state', callback),
+  onPreview: (callback) => subscribe<{ id: number; data: string }>('chrome:preview', callback),
   onFindResult: (callback) => subscribe<FindResult>('chrome:find-result', callback),
   onFocusOmnibox: (callback) => subscribe<void>('chrome:focus-omnibox', callback),
   onFocusFind: (callback) => subscribe<void>('chrome:focus-find', callback),

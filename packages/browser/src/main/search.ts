@@ -110,8 +110,8 @@ export function searchSuggestions(
   if (!value) return [];
   const suggestions: Suggestion[] = [];
   const remote = settings.searchEngine === 'local'
-    ? `Ricerca nell'indice locale`
-    : `Cerca con ${engineName(settings)}`;
+    ? `Search the local index`
+    : `Search with ${engineName(settings)}`;
   const searchEntry: Suggestion = {
     type: 'search',
     title: value,
@@ -123,7 +123,7 @@ export function searchSuggestions(
     suggestions.push({
       type: 'url',
       title: value,
-      subtitle: 'Apri l’indirizzo',
+      subtitle: 'Open the address',
       url: direct,
     });
   }
@@ -132,8 +132,8 @@ export function searchSuggestions(
 }
 
 export function engineName(settings: Settings): string {
-  if (settings.searchEngine === 'local') return 'LomeSearch locale';
-  if (settings.searchEngine === 'custom') return 'motore personalizzato';
+  if (settings.searchEngine === 'local') return 'local LomeSearch';
+  if (settings.searchEngine === 'custom') return 'custom engine';
   return SEARCH_ENGINES[settings.searchEngine as Exclude<SearchEngineId, 'local' | 'custom'>]?.name ?? 'DuckDuckGo';
 }
 

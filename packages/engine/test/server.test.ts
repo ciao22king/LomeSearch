@@ -70,10 +70,10 @@ test('search server serves pages, JSON, suggestions and IndexNow', async () => {
     assert.equal(html.status, 200);
     assert.match(text, /<mark>browser<\/mark>/);
     assert.match(text, /name="q"/);
-    assert.match(text, /Nessun cookie/);
+    assert.match(text, /No cookies/);
 
     const home = await fetch(`${server.origin}/`);
-    assert.match(await home.text(), /documenti indicizzati/);
+    assert.match(await home.text(), /documents indexed/);
 
     const suggest = await fetch(`${server.origin}/suggest?q=priv`);
     const suggestions = (await suggest.json()) as [string, string[]];

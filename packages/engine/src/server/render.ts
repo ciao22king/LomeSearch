@@ -129,13 +129,13 @@ function renderHome(context: RenderContext): string {
   return `
 <main>
   <div class="notice">
-    Motore di ricerca locale: le query non vengono registrate, non ci sono cookie
-    e nessuna richiesta esce da questa macchina.
+    Local search engine: queries are not logged, there are no cookies, and no
+    request leaves this machine.
   </div>
   <div class="stats">
-    <div><strong>${formatNumber(context.indexStats.documents)}</strong>documenti indicizzati</div>
-    <div><strong>${formatNumber(context.indexStats.indexedTerms)}</strong>termini nell'indice</div>
-    <div><strong>${formatNumber(context.indexStats.segments)}</strong>segmenti</div>
+    <div><strong>${formatNumber(context.indexStats.documents)}</strong>documents indexed</div>
+    <div><strong>${formatNumber(context.indexStats.indexedTerms)}</strong>terms in the index</div>
+    <div><strong>${formatNumber(context.indexStats.segments)}</strong>segments</div>
   </div>
 </main>`;
 }
@@ -148,44 +148,44 @@ function renderResults(
 ): string {
   if (response.results.length === 0) {
     const suggestion = response.suggestion
-      ? `<p class="notice">Forse cercavi <a href="/search?q=${encodeURIComponent(response.suggestion)}">${escapeHtml(response.suggestion)}</a>?</p>`
+      ? `<p class="notice">Did you mean <a href="/search?q=${encodeURIComponent(response.suggestion)}">${escapeHtml(response.suggestion)}</a>?</p>`
       : '';
     return `<main>
-  <p class="meta">Nessun risultato per <strong>${escapeHtml(query)}</strong> in ${response.tookMs.toFixed(1)} ms.</p>
+  <p class="meta">No results for <strong>${escapeHtml(query)}</strong> in ${response.tookMs.toFixed(1)} ms.</p>
   ${suggestion}
   <div class="empty">
-    <h2>Nessun documento corrisponde alla ricerca</h2>
-    <p>Prova con meno parole, senza virgolette, oppure aggiungi altre pagine all'indice con <code>lomesearch crawl</code>.</p>
+    <h2>No document matches the query</h2>
+    <p>Try fewer words, without quotes, or add more pages to the index with <code>lomesearch crawl</code>.</p>
   </div>
 </main>`;
   }
 
   const items = response.results.map((result) => renderResult(result)).join('\n');
   const total =
-    response.totalRelation === 'gte' ? `più di ${formatNumber(response.total)}` : formatNumber(response.total);
+    response.totalRelation === 'gte' ? `more than ${formatNumber(response.total)}` : formatNumber(response.total);
   const relaxed = response.relaxed
-    ? '<p class="meta">Pochi risultati esatti: la ricerca è stata allargata ai termini singoli.</p>'
+    ? '<p class="meta">Few exact results: the query was widened to individual terms.</p>'
     : '';
   const suggestion =
     response.suggestion && response.results.length > 0
-      ? `<p class="meta">Suggerimento: <a href="/search?q=${encodeURIComponent(response.suggestion)}">${escapeHtml(response.suggestion)}</a></p>`
+      ? `<p class="meta">Suggestion: <a href="/search?q=${encodeURIComponent(response.suggestion)}">${escapeHtml(response.suggestion)}</a></p>`
       : '';
 
   const perPage = 10;
   const pager: string[] = [];
   if (page > 1) {
     pager.push(
-      `<a rel="prev" href="/search?q=${encodeURIComponent(query)}&page=${page - 1}">Pagina precedente</a>`,
+      `<a rel="prev" href="/search?q=${encodeURIComponent(query)}&page=${page - 1}">Previous page</a>`,
     );
   }
   if (response.results.length >= perPage) {
     pager.push(
-      `<a rel="next" href="/search?q=${encodeURIComponent(query)}&page=${page + 1}">Pagina successiva</a>`,
+      `<a rel="next" href="/search?q=${encodeURIComponent(query)}&page=${page + 1}">Next page</a>`,
     );
   }
 
   return `<main>
-  <p class="meta">${total} risultati in ${response.tookMs.toFixed(1)} ms &middot; nessuna query registrata</p>
+  <p class="meta">${total} results in ${response.tookMs.toFixed(1)} ms &middot; no query logged</p>
   ${relaxed}
   ${suggestion}
   <ol class="results">
@@ -197,7 +197,7 @@ function renderResults(
 
 function renderResult(result: SearchResult): string {
   const date = result.fetchedAt
-    ? new Date(result.fetchedAt).toLocaleDateString('it-IT', {
+    ? new Date(result.fetchedAt).toLocaleDateString('en-US', {
         year: 'numeric',
         month: 'short',
         day: 'numeric',
@@ -215,7 +215,7 @@ function renderResult(result: SearchResult): string {
 
 function pageShell(context: RenderContext, query: string, body: string): string {
   return `<!doctype html>
-<html lang="it">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -230,15 +230,15 @@ function pageShell(context: RenderContext, query: string, body: string): string 
     <a class="brand" href="/">Lome<span>Search</span></a>
   </header>
   <form class="search" action="/search" method="get" role="search">
-    <label for="q" class="visually-hidden" hidden>Cerca nell'indice</label>
-    <input id="q" type="search" name="q" value="${escapeHtml(query)}" placeholder="Cerca nell'indice locale" autocomplete="off" autofocus>
-    <button type="submit">Cerca</button>
+    <label for="q" class="visually-hidden" hidden>Search the index</label>
+    <input id="q" type="search" name="q" value="${escapeHtml(query)}" placeholder="Search the local index" autocomplete="off" autofocus>
+    <button type="submit">Search</button>
   </form>
   ${body}
   <footer>
-    <span>Indice locale su ${escapeHtml(context.engineHost)}</span>
-    <span>Nessun cookie &middot; nessun tracciamento &middot; query non registrate</span>
-    <a href="/stats">Statistiche</a>
+    <span>Local index on ${escapeHtml(context.engineHost)}</span>
+    <span>No cookies &middot; no tracking &middot; queries not logged</span>
+    <a href="/stats">Stats</a>
     <a href="/opensearch.xml">OpenSearch</a>
   </footer>
 </div>
@@ -251,7 +251,7 @@ export function renderOpenSearch(origin: string, host: string): string {
   return `<?xml version="1.0" encoding="UTF-8"?>
 <OpenSearchDescription xmlns="http://a9.com/-/spec/opensearch/1.1/">
   <ShortName>LomeSearch</ShortName>
-  <Description>Motore di ricerca locale di LomeSearch, senza tracciamento</Description>
+  <Description>LomeSearch local search engine, no tracking</Description>
   <InputEncoding>UTF-8</InputEncoding>
   <OutputEncoding>UTF-8</OutputEncoding>
   <Image width="16" height="16" type="image/svg+xml">${base}/favicon.svg</Image>
@@ -264,12 +264,12 @@ export function renderOpenSearch(origin: string, host: string): string {
 
 export function renderErrorPage(status: number, message: string): string {
   return `<!doctype html>
-<html lang="it"><head><meta charset="utf-8"><title>${status} - LomeSearch</title>
+<html lang="en"><head><meta charset="utf-8"><title>${status} - LomeSearch</title>
 <style>${STYLES}</style></head>
 <body><div class="wrap"><header class="bar"><a class="brand" href="/">Lome<span>Search</span></a></header>
 <main><h1>${status}</h1><p>${escapeHtml(message)}</p></main></div></body></html>`;
 }
 
 function formatNumber(value: number): string {
-  return value.toLocaleString('it-IT');
+  return value.toLocaleString('en-US');
 }

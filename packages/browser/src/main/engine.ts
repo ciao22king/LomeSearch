@@ -76,7 +76,7 @@ export class EngineManager {
       this.status = {
         ...this.status,
         running: false,
-        error: 'motore non trovato: esegui "npm run build" nella cartella del progetto',
+        error: 'engine not found: run "npm run build" in the project folder',
       };
       this.publish();
       return;
@@ -112,7 +112,7 @@ export class EngineManager {
       this.status = {
         ...this.status,
         running: false,
-        error: code === 0 ? null : `il motore è terminato (codice ${code ?? 'sconosciuto'})`,
+        error: code === 0 ? null : `the engine exited (code ${code ?? 'unknown'})`,
       };
       this.publish();
     });
@@ -122,13 +122,13 @@ export class EngineManager {
       this.status = {
         ...this.status,
         running: false,
-        error: `il motore non risponde su ${origin}. Controlla la porta ${settings.port} e i log.`,
+        error: `the engine does not answer on ${origin}. Check port ${settings.port} and the logs.`,
       };
       this.publish();
       return;
     }
     await this.refreshStats();
-    this.log(`engine: avviato su ${origin}`);
+    this.log(`engine: started on ${origin}`);
     this.publish();
   }
 

@@ -13,6 +13,8 @@ export type ReferrerPolicySetting = 'strict' | 'origin' | 'none';
 
 export interface PrivacySettings {
   blockTrackers: boolean;
+  blockAds: boolean;
+  cosmeticFiltering: boolean;
   blockThirdPartyCookies: boolean;
   httpsFirst: boolean;
   sendDoNotTrack: boolean;
@@ -24,6 +26,19 @@ export interface PrivacySettings {
   spellchecker: boolean;
   clearOnExit: boolean;
   remoteBlocklist: string;
+  /** Send decoy forwarding headers. Does not hide the real source address. */
+  fakeIpEnabled: boolean;
+  /** Fixed decoy address; empty means a new reserved address per request. */
+  fakeIpAddress: string;
+}
+
+export interface AppearanceSettings {
+  tabPreviews: boolean;
+}
+
+export interface PerformanceSettings {
+  /** Minutes of inactivity before a tab is discarded; 0 disables it. */
+  freezeAfterMinutes: number;
 }
 
 export interface EngineSettings {
@@ -58,6 +73,8 @@ export interface Settings {
   theme: ThemeMode;
   language: string;
   privacy: PrivacySettings;
+  appearance: AppearanceSettings;
+  performance: PerformanceSettings;
   engine: EngineSettings;
   downloads: DownloadSettings;
   history: HistorySettings;
@@ -80,6 +97,9 @@ export interface TabState {
   audible: boolean;
   muted: boolean;
   crashed: boolean;
+  frozen: boolean;
+  hasPreview: boolean;
+  lastActive: number;
 }
 
 export interface WindowState {
@@ -301,6 +321,8 @@ export interface ChromeApi {
   zoom(direction: 1 | -1 | 0): Promise<void>;
   createTab(url?: string, background?: boolean): Promise<void>;
   closeTab(id: number): Promise<void>;
+  freezeTab(id: number): Promise<void>;
+  freezeInactive(): Promise<number>;
   selectTab(id: number): Promise<void>;
   moveTab(id: number, index: number): Promise<void>;
   reopenTab(): Promise<void>;
@@ -316,6 +338,7 @@ export interface ChromeApi {
   command(action: string): Promise<void>;
   openPage(page: string): Promise<void>;
   onState(callback: (state: ChromeState) => void): () => void;
+  onPreview(callback: (preview: { id: number; data: string }) => void): () => void;
   onFindResult(callback: (result: FindResult) => void): () => void;
   onFocusOmnibox(callback: () => void): () => void;
   onFocusFind(callback: () => void): () => void;

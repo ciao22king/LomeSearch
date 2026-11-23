@@ -38,7 +38,7 @@ export class ExtensionManager {
   ): Promise<ExtensionInfo | null> {
     const path = resolve(inputPath);
     if (!isExtensionDirectory(path)) {
-      this.errors.set(path, 'manifest.json non trovato o non valido');
+      this.errors.set(path, 'manifest.json missing or invalid');
       this.onUpdate();
       return null;
     }
@@ -55,10 +55,10 @@ export class ExtensionManager {
       if (!options.silent) {
         await dialog.showMessageBox({
           type: 'error',
-          title: 'Estensione non caricata',
-          message: 'LomeSearch non è riuscito a caricare l’estensione.',
+          title: 'Extension not loaded',
+          message: 'LomeSearch could not load the extension.',
           detail: `${path}\n\n${message}`,
-          buttons: ['Chiudi'],
+          buttons: ['Close'],
         });
       }
       this.onUpdate();
@@ -96,7 +96,7 @@ export class ExtensionManager {
 
   async pickDirectory(): Promise<string | null> {
     const result = await dialog.showOpenDialog({
-      title: 'Seleziona la cartella dell’estensione',
+      title: 'Select the extension folder',
       properties: ['openDirectory'],
       buttonLabel: 'Carica estensione',
     });
@@ -133,7 +133,7 @@ export class ExtensionManager {
         version: '',
         path,
         enabled: false,
-        error: 'cartella non trovata',
+        error: 'folder not found',
       };
     }
     return {
@@ -142,7 +142,7 @@ export class ExtensionManager {
       version: readExtensionVersion(path) ?? '',
       path,
       enabled: false,
-      error: this.errors.get(path) ?? (this.disabled.has(path) ? 'disattivata' : 'non caricata'),
+      error: this.errors.get(path) ?? (this.disabled.has(path) ? 'disabled' : 'not loaded'),
     };
   }
 
