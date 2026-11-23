@@ -54,6 +54,10 @@ jobs:
           if-no-files-found: error
 
   macos:
+    # Not every account can schedule macOS runners; without them GitHub cancels
+    # the job in the first second, so keep it non-blocking and build the dmg
+    # with `npm run dist:mac` on a Mac when that happens.
+    continue-on-error: true
     strategy:
       fail-fast: false
       matrix:
