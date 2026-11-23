@@ -1,0 +1,74 @@
+name: Site
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'site/**'
+      - '.github/workflows/site.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check internal links and anchors
+        run: |
+          node - <<'NODE'
+          const fs = require('node:fs');
+          const path = require('node:path');
+          const root = 'site';
+          const pages = ['index.html', '404.html'];
+          const ids = new Map();
+          const files = new Map();
+          for (const page of pages) {
+            const html = fs.readFileSync(path.join(root, page), 'utf8');
+            files.set(page, html);
+            ids.set(page, new Set([...html.matchAll(/id="([^"]+)"/g)].map((m) => m[1])));
+          }
+          const problems = [];
+          for (const [page, html] of files) {
+            for (const [, href] of html.matchAll(/href="([^"]+)"/g)) {
+              if (href.startsWith('#')) {
+                const id = href.slice(1);
+                if (id && !ids.get(page).has(id)) problems.push(`${page}: missing anchor ${href}`);
+              } else if (/^assets\/|^site\.webmanifest$|^\.\/$/.test(href)) {
+                const target = href === './' ? 'index.html' : href;
+                if (!fs.existsSync(path.join(root, target))) problems.push(`${page}: missing file ${href}`);
+              }
+            }
+            for (const [, src] of html.matchAll(/src="([^"]+)"/g)) {
+              if (src.startsWith('assets/') && !fs.existsSync(path.join(root, src))) {
+                problems.push(`${page}: missing asset ${src}`);
+              }
+            }
+          }
+          if (problems.length) {
+            console.error(problems.join('\n'));
+            process.exit(1);
+          }
+          console.log('site links ok');
+          NODE
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+      - id: deployment
+        uses: actions/deploy-pages@v4

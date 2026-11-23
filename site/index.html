@@ -1,0 +1,951 @@
+<!doctype html>
+<html lang="it">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>LomeSearch — browser e motore di ricerca in locale</title>
+    <meta
+      name="description"
+      content="LomeSearch è un browser desktop e un motore di ricerca che indicizza e cerca sul tuo computer. Nessun account, nessuna telemetria, query che non escono dalla macchina."
+    />
+    <link rel="canonical" href="https://ciao22king.github.io/LomeSearch/" />
+    <meta name="theme-color" content="#fbfaf7" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0e1110" media="(prefers-color-scheme: dark)" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="it_IT" />
+    <meta property="og:site_name" content="LomeSearch" />
+    <meta property="og:title" content="LomeSearch — browser e motore di ricerca in locale" />
+    <meta
+      property="og:description"
+      content="Indice tuo, crawler tuo, estensioni Chrome. Le query non lasciano il computer."
+    />
+    <meta property="og:url" content="https://ciao22king.github.io/LomeSearch/" />
+    <meta property="og:image" content="https://ciao22king.github.io/LomeSearch/assets/og.png" />
+    <meta property="og:image:width" content="1280" />
+    <meta property="og:image:height" content="640" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="LomeSearch — browser e motore di ricerca in locale" />
+    <meta
+      name="twitter:description"
+      content="Indice tuo, crawler tuo, estensioni Chrome. Le query non lasciano il computer."
+    />
+    <meta name="twitter:image" content="https://ciao22king.github.io/LomeSearch/assets/og.png" />
+
+    <link rel="icon" href="assets/icons/favicon.ico" sizes="32x32" />
+    <link rel="icon" href="assets/icons/icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png" />
+    <link rel="manifest" href="site.webmanifest" />
+    <link rel="stylesheet" href="assets/css/site.css" />
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "LomeSearch",
+        "applicationCategory": "BrowserApplication",
+        "operatingSystem": "Linux, Windows, Android",
+        "softwareVersion": "1.0.0",
+        "license": "https://www.apache.org/licenses/LICENSE-2.0",
+        "url": "https://ciao22king.github.io/LomeSearch/",
+        "downloadUrl": "https://github.com/ciao22king/LomeSearch/releases/tag/v1.0.0",
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "EUR" },
+        "description": "Browser desktop e motore di ricerca locale: indice sul disco, crawler proprio, nessuna telemetria."
+      }
+    </script>
+  </head>
+
+  <body>
+    <a class="skip-link" href="#main">Vai al contenuto</a>
+
+    <svg width="0" height="0" aria-hidden="true" focusable="false" style="position: absolute">
+      <defs>
+        <symbol id="i-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round">
+          <circle cx="10.5" cy="10.5" r="6.5" />
+          <path d="m15.4 15.4 4.1 4.1" />
+        </symbol>
+        <symbol id="i-download" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 4v11" />
+          <path d="m7.5 10.5 4.5 4.5 4.5-4.5" />
+          <path d="M5 19h14" />
+        </symbol>
+        <symbol id="i-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M5 12h13" />
+          <path d="m12.5 5.5 6.5 6.5-6.5 6.5" />
+        </symbol>
+        <symbol id="i-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round">
+          <circle cx="12" cy="12" r="4" />
+          <path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M18.4 5.6 17 7M7 17l-1.4 1.4" />
+        </symbol>
+        <symbol id="i-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20 14.5A8 8 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5Z" />
+        </symbol>
+        <symbol id="i-menu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round">
+          <path d="M4 7h16M4 12h16M4 17h16" />
+        </symbol>
+        <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="m5 12.5 4.5 4.5L19 7" />
+        </symbol>
+        <symbol id="i-ban" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round">
+          <circle cx="12" cy="12" r="8" />
+          <path d="m6.5 17.5 11-11" />
+        </symbol>
+        <symbol id="i-db" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+          <ellipse cx="12" cy="6" rx="7" ry="2.6" />
+          <path d="M5 6v12c0 1.4 3.1 2.6 7 2.6s7-1.2 7-2.6V6" />
+          <path d="M5 12c0 1.4 3.1 2.6 7 2.6s7-1.2 7-2.6" />
+        </symbol>
+        <symbol id="i-globe" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round">
+          <circle cx="12" cy="12" r="8" />
+          <path d="M4 12h16" />
+          <path d="M12 4c2.4 2.4 2.4 13.6 0 16" />
+          <path d="M12 4c-2.4 2.4-2.4 13.6 0 16" />
+        </symbol>
+        <symbol id="i-bolt" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M13 3 6 13h5l-1 8 8-11h-5l1-7Z" />
+        </symbol>
+        <symbol id="i-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 3.5 19 6v6c0 4-3 7-7 8.5C8 19 5 16 5 12V6l7-2.5Z" />
+          <path d="m9 12 2.2 2.2L15.5 10" />
+        </symbol>
+        <symbol id="i-plug" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 3v4M15 3v4" />
+          <path d="M6.5 7h11v3.5a5.5 5.5 0 0 1-11 0V7Z" />
+          <path d="M12 16v2.5a3 3 0 0 1-3 3H7.5" />
+        </symbol>
+        <symbol id="i-tabs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3.5" y="4.5" width="11" height="15" rx="1.8" />
+          <path d="M17.5 8h2A1.5 1.5 0 0 1 21 9.5v8a1.5 1.5 0 0 1-1.5 1.5h-2" />
+        </symbol>
+        <symbol id="i-terminal" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="4.5" width="18" height="15" rx="2" />
+          <path d="m7.5 10 2.5 2-2.5 2M12.5 14h4" />
+        </symbol>
+        <symbol id="i-external" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M14 4h6v6" />
+          <path d="M20 4 11 13" />
+          <path d="M18 14v5a1.5 1.5 0 0 1-1.5 1.5H5.5A1.5 1.5 0 0 1 4 19V7.5A1.5 1.5 0 0 1 5.5 6H10" />
+        </symbol>
+      </defs>
+    </svg>
+
+    <header class="site-header" data-open="false">
+      <div class="wrap site-header__inner">
+        <a class="brand" href="./">
+          <svg viewBox="0 0 32 32" aria-hidden="true">
+            <rect width="32" height="32" rx="8" fill="currentColor" style="color: var(--green)" />
+            <circle cx="14.5" cy="14.5" r="6.2" fill="none" stroke="#fff" stroke-width="2.6" />
+            <path d="m19.2 19.2 4.4 4.4" stroke="#fff" stroke-width="2.6" stroke-linecap="round" />
+          </svg>
+          <span>LomeSearch</span>
+        </a>
+
+        <nav class="nav" aria-label="Sezioni">
+          <a href="#panoramica">Panoramica</a>
+          <a href="#funzioni">Funzioni</a>
+          <a href="#come-funziona">Come funziona</a>
+          <a href="#privacy">Privacy</a>
+          <a href="#download">Download</a>
+          <a href="#faq">FAQ</a>
+        </nav>
+
+        <div class="header-tools">
+          <a
+            class="icon-btn"
+            href="https://github.com/ciao22king/LomeSearch"
+            aria-label="Repository su GitHub"
+          >
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path
+                d="M12 2a10 10 0 0 0-3.16 19.49c.5.09.68-.22.68-.48v-1.7c-2.78.6-3.37-1.34-3.37-1.34-.45-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.61.07-.61 1 .07 1.53 1.03 1.53 1.03.89 1.53 2.34 1.09 2.91.83.09-.65.35-1.09.63-1.34-2.22-.25-4.56-1.11-4.56-4.95 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.65 0 0 .84-.27 2.75 1.02a9.5 9.5 0 0 1 5 0c1.91-1.29 2.75-1.02 2.75-1.02.55 1.38.2 2.4.1 2.65.64.7 1.03 1.59 1.03 2.68 0 3.85-2.34 4.7-4.57 4.95.36.31.68.92.68 1.85v2.74c0 .27.18.58.69.48A10 10 0 0 0 12 2Z"
+              />
+            </svg>
+          </a>
+          <button class="icon-btn" type="button" data-theme-toggle aria-pressed="false" aria-label="Cambia tema">
+            <svg class="icon-sun" aria-hidden="true"><use href="#i-sun" /></svg>
+            <svg class="icon-moon" aria-hidden="true"><use href="#i-moon" /></svg>
+          </button>
+          <button
+            class="icon-btn nav-toggle"
+            type="button"
+            data-nav-toggle
+            aria-expanded="false"
+            aria-controls="main"
+            aria-label="Apri il menu"
+          >
+            <svg aria-hidden="true"><use href="#i-menu" /></svg>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <main id="main">
+      <section class="hero">
+        <div class="wrap hero__grid">
+          <div>
+            <p class="kicker">Browser e motore di ricerca · Apache-2.0</p>
+            <h1>Cerca il web senza consegnare le query a <span class="mark">nessuno</span>.</h1>
+            <p class="lede">
+              LomeSearch è un browser desktop con il suo motore di ricerca. L'indice sta sul tuo disco,
+              il crawler gira sulla tua macchina, le ricerche non partono da nessuna parte.
+            </p>
+            <div class="hero__actions">
+              <a class="btn btn--primary" href="#download">
+                <svg aria-hidden="true"><use href="#i-download" /></svg>
+                Scarica la 1.0.0
+              </a>
+              <a class="btn btn--ghost" href="#come-funziona">
+                Come funziona
+                <svg aria-hidden="true"><use href="#i-arrow" /></svg>
+              </a>
+            </div>
+            <ul class="meta-row">
+              <li>Linux · Windows · Android</li>
+              <li>Node ≥ 22</li>
+              <li>Nessun account</li>
+            </ul>
+          </div>
+
+          <div class="frame">
+            <div class="frame__bar">
+              <span class="frame__dot"></span>
+              <span class="frame__dot"></span>
+              <span class="frame__dot"></span>
+              <span class="frame__label">127.0.0.1:7717</span>
+            </div>
+            <img
+              src="assets/shots/search.png"
+              width="1240"
+              height="820"
+              alt="La pagina dei risultati di LomeSearch: campo di ricerca, 13 risultati in 13,9 ms, snippet con i termini evidenziati."
+              fetchpriority="high"
+            />
+          </div>
+        </div>
+      </section>
+
+      <div class="wrap">
+        <div class="stats">
+          <div class="stat"><strong>0</strong><span>query scritte su disco</span></div>
+          <div class="stat"><strong>13,9 ms</strong><span>risposta su indice demo</span></div>
+          <div class="stat"><strong>214</strong><span>regole di blocco incluse</span></div>
+          <div class="stat"><strong>107</strong><span>test automatici</span></div>
+        </div>
+      </div>
+
+      <section class="section" id="panoramica">
+        <div class="wrap">
+          <div class="section-head reveal">
+            <span class="section-index">01 — Panoramica</span>
+            <h2>Tre cose che i browser normali non possono darti.</h2>
+            <p class="section-lede">
+              Non è un fork di Chromium con un'altra skin: è un motore di ricerca vero, scritto da zero
+              in TypeScript, più un guscio Electron che lo usa come home page e come motore predefinito.
+            </p>
+          </div>
+
+          <div class="cols-3">
+            <div class="prose-block reveal">
+              <h3>Un indice che è tuo</h3>
+              <p>
+                Il motore costruisce segmenti immutabili sul disco e li interroga con BM25: niente
+                database esterni, niente servizi da chiamare, niente limite di query al giorno.
+              </p>
+              <p>
+                Indicizzi la documentazione che usi, il tuo blog, l'intranet: quello che cerchi è
+                esattamente quello che hai messo dentro.
+              </p>
+            </div>
+            <div class="prose-block reveal">
+              <h3>Un crawler che si comporta bene</h3>
+              <p>
+                Legge <code>robots.txt</code> prima di ogni host, tiene un solo dominio alla volta con
+                un ritardo configurabile, segue le sitemap e scarta le pagine quasi identiche con SimHash.
+              </p>
+              <p>
+                Se un sito parla IndexNow, il motore accetta le sue notifiche e mette le URL in cima
+                alla coda invece di aspettare il prossimo giro.
+              </p>
+            </div>
+            <div class="prose-block reveal">
+              <h3>Le estensioni che hai già</h3>
+              <p>
+                Le cartelle di estensione Chrome si caricano così come sono: content script, CSS
+                iniettato, blocker, lettori, password manager.
+              </p>
+              <p>
+                Electron copre una parte delle API; il resto è dichiarato apertamente invece di essere
+                promesso e poi negato.
+              </p>
+            </div>
+          </div>
+
+          <blockquote class="pull reveal">
+            Il motore non ha un endpoint per registrare le query. Non esiste un posto in cui finiscano.
+            <cite>docs/engine.md</cite>
+          </blockquote>
+        </div>
+      </section>
+
+      <section class="section section--sunken" id="funzioni">
+        <div class="wrap">
+          <div class="section-head reveal">
+            <span class="section-index">02 — Funzioni</span>
+            <h2>Cosa c'è dentro.</h2>
+            <p class="section-lede">
+              Ogni voce è implementata in questo repository, non è una roadmap: si può leggere il
+              codice, eseguire i test e ricompilare tutto in locale.
+            </p>
+          </div>
+
+          <div class="grid-hair reveal">
+            <article class="card">
+              <span class="card__icon"><svg aria-hidden="true"><use href="#i-db" /></svg></span>
+              <h3>Indice locale BM25</h3>
+              <p>
+                Segmenti immutabili, merge in background, postings compressi. La ricerca classifica per
+                rilevanza con BM25 e normalizza la lunghezza del documento.
+              </p>
+            </article>
+            <article class="card">
+              <span class="card__icon"><svg aria-hidden="true"><use href="#i-globe" /></svg></span>
+              <h3>Crawler rispettoso</h3>
+              <p>
+                <code>robots.txt</code> per host, ritardo minimo, concorrenza limitata, sitemap,
+                deduplica SimHash e frontier persistente: si può interrompere e riprendere.
+              </p>
+            </article>
+            <article class="card">
+              <span class="card__icon"><svg aria-hidden="true"><use href="#i-bolt" /></svg></span>
+              <h3>IndexNow</h3>
+              <p>
+                <code>POST /indexnow</code> accetta il payload standard, verifica la chiave sul sito e
+                mette le URL a priorità zero. La CLI sa anche inviare ai motori esterni.
+              </p>
+            </article>
+            <article class="card">
+              <span class="card__icon"><svg aria-hidden="true"><use href="#i-shield" /></svg></span>
+              <h3>Blocco tracker e pubblicità</h3>
+              <p>
+                214 regole incluse, filtri cosmetici, cookie di terze parti bloccati, HTTPS-first,
+                DNS over HTTPS, WebRTC disattivato, referrer ridotto al minimo.
+              </p>
+            </article>
+            <article class="card">
+              <span class="card__icon"><svg aria-hidden="true"><use href="#i-plug" /></svg></span>
+              <h3>Estensioni Chrome</h3>
+              <p>
+                Carichi una cartella con <code>manifest.json</code> e l'estensione parte nella
+                sessione normale. Nelle finestre private resta spenta.
+              </p>
+            </article>
+            <article class="card">
+              <span class="card__icon"><svg aria-hidden="true"><use href="#i-tabs" /></svg></span>
+              <h3>Tab verticali con anteprime</h3>
+              <p>
+                Le schede stanno in colonna con un'anteprima dal vivo; quelle ferme da troppo tempo
+                vengono congelate per non consumare memoria.
+              </p>
+            </article>
+          </div>
+
+          <p class="note">
+            In più: OpenSearch per aggiungere il motore a un altro browser · CLI completa · API HTTP su
+            <code>127.0.0.1:7717</code> · import di documenti in JSONL · chiave IndexNow servita dal
+            motore · snippet con i termini evidenziati · ricerca in italiano e inglese.
+          </p>
+        </div>
+      </section>
+
+      <section class="section" id="come-funziona">
+        <div class="wrap">
+          <div class="section-head reveal">
+            <span class="section-index">03 — Come funziona</span>
+            <h2>Indicizza, interroga, accelera.</h2>
+          </div>
+
+          <ol class="steps">
+            <li class="reveal">
+              <div>
+                <h3>Indicizza quello che ti serve</h3>
+                <p>
+                  Un comando, una lista di URL o un file JSONL. Il crawler legge le regole del sito,
+                  aspetta il tempo dovuto fra una richiesta e l'altra e salva il frontier su disco: se lo
+                  interrompi, riparte da dove era.
+                </p>
+              </div>
+            </li>
+            <li class="reveal">
+              <div>
+                <h3>Interroga senza uscire dalla macchina</h3>
+                <p>
+                  Il motore apre i segmenti in memoria mappata e risponde in BM25 con gli snippet già
+                  evidenziati. Il server ascolta solo su loopback, a meno che tu non gli dica il
+                  contrario.
+                </p>
+              </div>
+            </li>
+            <li class="reveal">
+              <div>
+                <h3>Accelera con IndexNow</h3>
+                <p>
+                  Quando un sito pubblica qualcosa di nuovo, può avvisare il motore con
+                  <code>POST /indexnow</code>: la verifica della chiave passa dal file sul sito, non da
+                  un accordo fra server. Le URL accettate vengono ricrawlate subito.
+                </p>
+              </div>
+            </li>
+          </ol>
+
+          <div class="code reveal" style="margin-top: 2.5rem">
+            <div class="code__head">
+              <span>terminale</span>
+              <button class="code__copy" type="button">Copia</button>
+            </div>
+            <pre><span class="c"># indicizza un sito, con le regole del sito</span>
+<b>lomesearch crawl</b> https://tuosito.it --max-pages 500
+
+<span class="c"># il browser avvia il motore da solo; da terminale è così</span>
+<b>lomesearch serve</b> --port 7717
+
+<span class="c"># cerca, in JSON o in HTML</span>
+<b>lomesearch search</b> "privacy browser" --json</pre>
+          </div>
+        </div>
+      </section>
+
+      <section class="section section--sunken" id="screenshot">
+        <div class="wrap">
+          <div class="section-head reveal">
+            <span class="section-index">04 — Dentro l'app</span>
+            <h2>Tre schermate, nessuna ritoccata.</h2>
+            <p class="section-lede">
+              Le immagini sono catturate dall'app in esecuzione su un indice di prova con pagine del
+              Tor Project e della EFF.
+            </p>
+          </div>
+
+          <div class="shots">
+            <figure class="shot shot--wide reveal">
+              <button
+                type="button"
+                data-lightbox="assets/shots/newtab.png"
+                aria-label="Ingrandisci: nuova scheda"
+              >
+                <div class="frame">
+                  <div class="frame__bar">
+                    <span class="frame__dot"></span><span class="frame__dot"></span><span class="frame__dot"></span>
+                    <span class="frame__label">nuova scheda</span>
+                  </div>
+                  <img
+                    src="assets/shots/newtab.png"
+                    width="1240"
+                    height="820"
+                    loading="lazy"
+                    alt="Nuova scheda con il campo di ricerca, i contatori dell'indice e lo stato del motore locale."
+                  />
+                </div>
+              </button>
+              <figcaption>
+                <strong>Nuova scheda.</strong> Il motore locale, quanti documenti ha in pancia, quante richieste sono state bloccate e dove sono i collegamenti rapidi.
+              </figcaption>
+            </figure>
+            <figure class="shot reveal">
+              <button
+                type="button"
+                data-lightbox="assets/shots/privacy.png"
+                aria-label="Ingrandisci: lome://privacy"
+              >
+                <div class="frame">
+                  <div class="frame__bar">
+                    <span class="frame__dot"></span><span class="frame__dot"></span><span class="frame__dot"></span>
+                    <span class="frame__label">lome://privacy</span>
+                  </div>
+                  <img
+                    src="assets/shots/privacy.png"
+                    width="1240"
+                    height="820"
+                    loading="lazy"
+                    alt="Pannello privacy: richieste bloccate per dominio, regole attive ed eccezioni per sito."
+                  />
+                </div>
+              </button>
+              <figcaption>
+                <strong>Privacy.</strong> I blocchi si contano per dominio, non per singola richiesta: basta per capire chi ti seguiva, non abbastanza per ricostruire la navigazione.
+              </figcaption>
+            </figure>
+            <figure class="shot reveal">
+              <button
+                type="button"
+                data-lightbox="assets/shots/extensions.png"
+                aria-label="Ingrandisci: lome://extensions"
+              >
+                <div class="frame">
+                  <div class="frame__bar">
+                    <span class="frame__dot"></span><span class="frame__dot"></span><span class="frame__dot"></span>
+                    <span class="frame__label">lome://extensions</span>
+                  </div>
+                  <img
+                    src="assets/shots/extensions.png"
+                    width="1240"
+                    height="820"
+                    loading="lazy"
+                    alt="Pagina estensioni con un'estensione Chrome caricata da cartella e lo stato attivo."
+                  />
+                </div>
+              </button>
+              <figcaption>
+                <strong>Estensioni.</strong> Una cartella con <code>manifest.json</code> caricata a mano, con nome, versione, percorso e stato. Nelle finestre private non viene eseguita.
+              </figcaption>
+            </figure>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="privacy">
+        <div class="wrap">
+          <div class="section-head reveal">
+            <span class="section-index">05 — Privacy</span>
+            <h2>Dove finiscono i dati, per l'appunto.</h2>
+            <p class="section-lede">
+              Non c'è un reparto marketing che decide cosa raccogliere: c'è un elenco di file. Questa
+              è la versione breve di <code>docs/privacy.md</code>.
+            </p>
+          </div>
+
+          <div class="privacy-cols">
+            <div class="table-scroll reveal">
+              <table>
+                <caption class="visually-hidden">
+                  Dove vengono salvati i dati
+                </caption>
+                <thead>
+                  <tr>
+                    <th scope="col">Dato</th>
+                    <th scope="col">Dove</th>
+                    <th scope="col">Perché</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>Testi indicizzati</td>
+                    <td><code>~/.local/share/lomesearch</code></td>
+                    <td>servono a mostrare risultati e snippet</td>
+                  </tr>
+                  <tr>
+                    <td>Cronologia e preferiti</td>
+                    <td>database SQLite nel profilo</td>
+                    <td>solo se li usi; si cancellano dal menu</td>
+                  </tr>
+                  <tr>
+                    <td>Query</td>
+                    <td>nessun posto</td>
+                    <td>il motore non scrive un log delle ricerche</td>
+                  </tr>
+                  <tr>
+                    <td>Contatori dei blocchi</td>
+                    <td>memoria del processo</td>
+                    <td>per il pannello privacy, aggregati per dominio</td>
+                  </tr>
+                  <tr>
+                    <td>Chiave IndexNow</td>
+                    <td><code>indexnow-key.txt</code></td>
+                    <td>per farsi verificare dai siti che notificano</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="reveal">
+              <ul class="checklist checklist--no">
+                <li>
+                  <svg aria-hidden="true"><use href="#i-ban" /></svg>
+                  <span>Nessun account: non c'è un server a cui registrarsi.</span>
+                </li>
+                <li>
+                  <svg aria-hidden="true"><use href="#i-ban" /></svg>
+                  <span>Nessuna telemetria, nessun crash reporter, nessun SDK di analytics.</span>
+                </li>
+                <li>
+                  <svg aria-hidden="true"><use href="#i-ban" /></svg>
+                  <span>Nessun log delle query, nemmeno in locale.</span>
+                </li>
+                <li>
+                  <svg aria-hidden="true"><use href="#i-ban" /></svg>
+                  <span>Nessun font, script o immagine caricati da CDN di terze parti.</span>
+                </li>
+                <li>
+                  <svg aria-hidden="true"><use href="#i-ban" /></svg>
+                  <span>Nessuna sincronizzazione cloud di cronologia o preferiti.</span>
+                </li>
+              </ul>
+
+              <ul class="checklist" style="margin-top: 1.75rem">
+                <li>
+                  <svg aria-hidden="true"><use href="#i-check" /></svg>
+                  <span>Il motore ascolta su <code>127.0.0.1</code>: per aprirlo alla LAN devi dirlo tu.</span>
+                </li>
+                <li>
+                  <svg aria-hidden="true"><use href="#i-check" /></svg>
+                  <span>Estensioni disattivate nelle finestre private.</span>
+                </li>
+                <li>
+                  <svg aria-hidden="true"><use href="#i-check" /></svg>
+                  <span>Cancellare la cartella dati equivale a ricominciare da zero.</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section section--sunken" id="download">
+        <div class="wrap">
+          <div class="section-head reveal">
+            <span class="section-index">06 — Download</span>
+            <h2>Installa, oppure compila.</h2>
+            <p class="section-lede">
+              I pacchetti sono firmati e pubblicati su GitHub Releases con il codice sorgente della
+              stessa versione. Ogni file ha il suo SHA-256 qui sotto.
+            </p>
+          </div>
+
+          <div class="downloads">
+            <article class="dl reveal">
+              <div class="dl__head">
+                <h3>Linux · Debian, Ubuntu</h3>
+                <span class="dl__size">.deb · 65,2 MB</span>
+              </div>
+              <p>Pacchetto <code>amd64</code> con l'app e il motore già dentro.</p>
+              <div class="code">
+                <div class="code__head">
+                  <span>installazione</span>
+                  <button class="code__copy" type="button">Copia</button>
+                </div>
+                <pre>sudo apt install ./LomeSearch-1.0.0-linux-amd64.deb</pre>
+              </div>
+              <div class="dl__actions">
+                <a
+                  class="btn btn--primary"
+                  href="https://github.com/ciao22king/LomeSearch/releases/download/v1.0.0/LomeSearch-1.0.0-linux-amd64.deb"
+                >
+                  <svg aria-hidden="true"><use href="#i-download" /></svg>
+                  Scarica .deb
+                </a>
+              </div>
+              <details class="hash">
+                <summary>SHA-256</summary>
+                <code>92cf5bad62163cf0a7d89d90508b781f5252056c8125e1c16bb24059bdf0f53c</code>
+              </details>
+            </article>
+
+            <article class="dl reveal">
+              <div class="dl__head">
+                <h3>Linux · AppImage</h3>
+                <span class="dl__size">AppImage · 73,1 MB</span>
+              </div>
+              <p>Un file unico, senza installazione né permessi di root.</p>
+              <div class="code">
+                <div class="code__head">
+                  <span>esecuzione</span>
+                  <button class="code__copy" type="button">Copia</button>
+                </div>
+                <pre>chmod +x LomeSearch-1.0.0-x86_64.AppImage
+./LomeSearch-1.0.0-x86_64.AppImage</pre>
+              </div>
+              <div class="dl__actions">
+                <a
+                  class="btn btn--primary"
+                  href="https://github.com/ciao22king/LomeSearch/releases/download/v1.0.0/LomeSearch-1.0.0-x86_64.AppImage"
+                >
+                  <svg aria-hidden="true"><use href="#i-download" /></svg>
+                  Scarica AppImage
+                </a>
+              </div>
+              <details class="hash">
+                <summary>SHA-256</summary>
+                <code>ca486c26692bdbb8055a8bff666efd06bb193f2d1833900370bcf1bd946f76a7</code>
+              </details>
+            </article>
+
+            <article class="dl reveal">
+              <div class="dl__head">
+                <h3>Windows · 10 e 11</h3>
+                <span class="dl__size">.exe · 71,3 MB</span>
+              </div>
+              <p>
+                Installer <code>x64</code>; nella stessa release c'è anche la versione portable.
+                Windows SmartScreen chiede conferma perché il certificato non è commerciale.
+              </p>
+              <div class="dl__actions">
+                <a
+                  class="btn btn--primary"
+                  href="https://github.com/ciao22king/LomeSearch/releases/download/v1.0.0/LomeSearch-1.0.0-setup.exe"
+                >
+                  <svg aria-hidden="true"><use href="#i-download" /></svg>
+                  Scarica installer
+                </a>
+                <a
+                  class="btn btn--ghost"
+                  href="https://github.com/ciao22king/LomeSearch/releases/download/v1.0.0/LomeSearch-1.0.0-portable.exe"
+                >
+                  Portable
+                </a>
+              </div>
+              <details class="hash">
+                <summary>SHA-256 installer · portable</summary>
+                <code>de2b95f7e26cdef2a3d2d691febe1f4c5b5d128d6c0a720db9cf35680088ce15</code>
+                <code>4fe280e28ef658ceaf36aafdf4750f457c1bd2e6bdffd895bf99b7b288c57487</code>
+              </details>
+            </article>
+
+            <article class="dl reveal">
+              <div class="dl__head">
+                <h3>Android · client</h3>
+                <span class="dl__size">.apk · 45 KB</span>
+              </div>
+              <p>
+                Un client leggero che si collega a un motore LomeSearch: lo stesso telefono sotto
+                Termux, un desktop sulla stessa rete o un piccolo server di casa. Android 7 o successivo.
+              </p>
+              <div class="dl__actions">
+                <a
+                  class="btn btn--primary"
+                  href="https://github.com/ciao22king/LomeSearch/releases/download/v1.0.0/LomeSearch-1.0.0-android.apk"
+                >
+                  <svg aria-hidden="true"><use href="#i-download" /></svg>
+                  Scarica APK
+                </a>
+              </div>
+              <details class="hash">
+                <summary>SHA-256</summary>
+                <code>720c209982daca90385b35507ec4cd998b6807b885fabc259166ce1990999b7b</code>
+              </details>
+            </article>
+          </div>
+
+          <p class="note">
+            macOS: la configurazione <code>dmg</code> e <code>zip</code> è nel repository
+            (<code>npm run dist:mac</code>), ma i runner macOS non sono attivi nella CI pubblica. Su
+            Apple Silicon funziona anche il motore da sorgente. Tutti i pacchetti:
+            <a href="https://github.com/ciao22king/LomeSearch/releases/tag/v1.0.0">GitHub Releases v1.0.0</a>.
+          </p>
+
+          <div class="code reveal" style="margin-top: 2rem">
+            <div class="code__head">
+              <span>da sorgente</span>
+              <button class="code__copy" type="button">Copia</button>
+            </div>
+            <pre>git clone https://github.com/ciao22king/LomeSearch.git
+cd LomeSearch
+npm install
+npm run build
+
+<span class="c"># motore in primo piano</span>
+node packages/engine/dist/src/cli.js serve --port 7717
+
+<span class="c"># oppure i pacchetti</span>
+npm run dist:linux   <span class="c"># dist:win · dist:mac · dist:android</span></pre>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="tecnica">
+        <div class="wrap">
+          <div class="section-head reveal">
+            <span class="section-index">07 — Dentro il codice</span>
+            <h2>Due processi, un confine netto.</h2>
+            <p class="section-lede">
+              Il browser non sa nulla di indici e il motore non sa nulla di schede: si parlano via IPC
+              e HTTP su loopback, quindi si possono usare separatamente.
+            </p>
+          </div>
+
+          <div class="arch">
+            <ul class="arch-list reveal">
+              <li>
+                <b>motore</b>
+                <span>
+                  TypeScript su Node ≥ 22. Crawler, parser HTML, tokenizer, indice a segmenti, server
+                  HTTP. Nessuna dipendenza di rete obbligatoria.
+                </span>
+              </li>
+              <li>
+                <b>indice</b>
+                <span>
+                  Segmenti immutabili con merge in background, postings compressi, BM25 con lunghezza
+                  media per campo, deduplica SimHash fra pagine quasi uguali.
+                </span>
+              </li>
+              <li>
+                <b>protocollo</b>
+                <span>
+                  HTTP su <code>127.0.0.1</code>: <code>/search</code>, <code>/stats</code>,
+                  <code>/suggest</code>, <code>/opensearch.xml</code>, <code>/indexnow</code>,
+                  <code>/indexnow/&lt;key&gt;.txt</code>.
+                </span>
+              </li>
+              <li>
+                <b>app</b>
+                <span>
+                  Electron 33: tab verticali con anteprime, omnibox che distingue host e query, filtri
+                  di rete, gestione estensioni, pagine <code>lome://</code>.
+                </span>
+              </li>
+              <li>
+                <b>test</b>
+                <span>
+                  53 test sul motore e 54 sull'app: parser, tokenizer, indice, IndexNow, robots, crawl,
+                  render. Si eseguono con <code>npm test</code>.
+                </span>
+              </li>
+              <li>
+                <b>licenza</b>
+                <span>
+                  Apache-2.0 su tutto il monorepo. Nessun binario proprietario, nessun servizio da
+                  attivare.
+                </span>
+              </li>
+            </ul>
+
+            <div class="code reveal">
+              <div class="code__head">
+                <span>architettura</span>
+                <button class="code__copy" type="button">Copia</button>
+              </div>
+              <pre>browser · Electron 33
+├── ui        tab verticali, omnibox, lome://
+├── rete      tracker, cookie 3p, DoH, referrer
+└── ipc ─────────────┐
+                     │  http://127.0.0.1:7717
+motore · Node ≥ 22   ▼
+├── crawler   robots.txt · sitemap · IndexNow
+├── parser    html, encoding, simhash
+├── indice    segmenti + BM25 su disco
+└── server    /search /suggest /stats /indexnow</pre>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section section--sunken" id="faq">
+        <div class="wrap">
+          <div class="section-head reveal">
+            <span class="section-index">08 — Domande</span>
+            <h2>Le risposte che servono prima di installare.</h2>
+          </div>
+
+          <div class="faq reveal">
+            <details>
+              <summary>Serve un server acceso?</summary>
+              <p>
+                No. Il motore è un processo locale che il browser avvia e spegne da solo; se preferisci
+                tenerlo su un'altra macchina, puoi avviarlo con <code>--bind 0.0.0.0</code> e puntare il
+                browser o l'app Android a quell'indirizzo.
+              </p>
+            </details>
+            <details>
+              <summary>Funziona offline?</summary>
+              <p>
+                La ricerca sì: l'indice è sul disco e non chiama nessuno. Le pagine che non hai già
+                indicizzato, ovviamente, non ci sono.
+              </p>
+            </details>
+            <details>
+              <summary>IndexNow è obbligatorio?</summary>
+              <p>
+                No. È un'opzione in più: se un sito pubblica un file chiave e invia le URL al motore, la
+                coda le ricrawla subito. Senza IndexNow funziona tutto, solo con qualche minuto di
+                ritardo.
+              </p>
+            </details>
+            <details>
+              <summary>Posso usare le estensioni del Chrome Web Store?</summary>
+              <p>
+                Non direttamente: il Web Store non è disponibile fuori da Chrome. Si caricano le
+                cartelle delle estensioni (quelle che scarichi dal repository dell'estensione o che
+                spacchetti tu). Le API supportate sono un sottoinsieme di quelle di Chrome.
+              </p>
+            </details>
+            <details>
+              <summary>Quanto costa e cosa devo dare in cambio?</summary>
+              <p>
+                Niente. Licenza Apache-2.0, nessun account, nessun piano a pagamento. Se vuoi
+                contribuire, i test e le segnalazioni sul repository sono la parte utile.
+              </p>
+            </details>
+            <details>
+              <summary>Come cancello tutto?</summary>
+              <p>
+                Chiudi l'app e cancella la cartella dati: <code>~/.local/share/lomesearch</code> su Linux,
+                <code>%APPDATA%\LomeSearch</code> su Windows. Non resta niente altrove.
+              </p>
+            </details>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="wrap">
+        <div class="footer__grid">
+          <div class="footer__brand">
+            <a class="brand" href="./">
+              <svg viewBox="0 0 32 32" aria-hidden="true">
+                <rect width="32" height="32" rx="8" fill="currentColor" style="color: var(--green)" />
+                <circle cx="14.5" cy="14.5" r="6.2" fill="none" stroke="#fff" stroke-width="2.6" />
+                <path d="m19.2 19.2 4.4 4.4" stroke="#fff" stroke-width="2.6" stroke-linecap="round" />
+              </svg>
+              <span>LomeSearch</span>
+            </a>
+            <p>
+              Browser desktop e motore di ricerca locale. Indice sul disco, nessuna query in partenza,
+              Apache-2.0.
+            </p>
+          </div>
+
+          <div class="footer__col">
+            <h4>Progetto</h4>
+            <ul>
+              <li><a href="https://github.com/ciao22king/LomeSearch">Codice sorgente</a></li>
+              <li><a href="https://github.com/ciao22king/LomeSearch/releases">Release</a></li>
+              <li><a href="https://github.com/ciao22king/LomeSearch/blob/main/docs/architecture.md">Architettura</a></li>
+              <li><a href="https://github.com/ciao22king/LomeSearch/blob/main/LICENSE">Licenza Apache-2.0</a></li>
+            </ul>
+          </div>
+
+          <div class="footer__col">
+            <h4>Documentazione</h4>
+            <ul>
+              <li><a href="https://github.com/ciao22king/LomeSearch/blob/main/docs/engine.md">Motore</a></li>
+              <li><a href="https://github.com/ciao22king/LomeSearch/blob/main/docs/browser.md">Browser</a></li>
+              <li><a href="https://github.com/ciao22king/LomeSearch/blob/main/docs/privacy.md">Privacy</a></li>
+              <li><a href="https://github.com/ciao22king/LomeSearch/blob/main/docs/distribution.md">Distribuzione</a></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="footer__legal">
+          <span>LomeSearch 1.0.0</span>
+          <span>Nessun cookie, nessun analytics</span>
+          <span>Nessuna richiesta a CDN di terze parti</span>
+          <span>Pagina statica servita da GitHub Pages</span>
+        </div>
+      </div>
+    </footer>
+
+    <dialog class="lightbox">
+      <img alt="" />
+    </dialog>
+
+    <noscript>
+      <style>
+        .reveal {
+          opacity: 1;
+          transform: none;
+        }
+      </style>
+    </noscript>
+    <script src="assets/js/site.js" defer></script>
+  </body>
+</html>

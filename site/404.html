@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="it">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Pagina non trovata — LomeSearch</title>
+    <meta name="robots" content="noindex" />
+    <link rel="icon" href="assets/icons/favicon.ico" sizes="32x32" />
+    <link rel="stylesheet" href="assets/css/site.css" />
+    <style>
+      .not-found {
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        padding: 3rem 1.5rem;
+      }
+      .not-found__inner {
+        max-width: 34rem;
+      }
+      .not-found h1 {
+        font-size: clamp(2rem, 6vw, 3.2rem);
+        margin: 1.25rem 0 0.9rem;
+      }
+      .not-found p {
+        color: var(--ink-soft);
+      }
+      .not-found .meta {
+        font-family: var(--mono);
+        font-size: 0.75rem;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--green);
+      }
+      .not-found .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        margin-top: 2rem;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="not-found">
+      <div class="not-found__inner">
+        <span class="meta">Errore 404</span>
+        <h1>Questa pagina non è nell'indice.</h1>
+        <p>
+          Il motore ha cercato e non ha trovato niente a questo indirizzo. Forse il collegamento è
+          vecchio, forse l'URL è stato scritto a mano.
+        </p>
+        <div class="actions">
+          <a class="btn btn--primary" href="./">Torna alla home</a>
+          <a class="btn btn--ghost" href="https://github.com/ciao22king/LomeSearch">Apri il repository</a>
+        </div>
+      </div>
+    </main>
+  </body>
+</html>

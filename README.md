@@ -17,6 +17,13 @@ Both are written from scratch with no runtime dependencies beyond Node.js and
 Electron. The engine is a plain Node HTTP server; the browser talks to it over
 loopback HTTP.
 
+![Search results in LomeSearch](site/assets/shots/search.png)
+
+The project site lives in [`site/`](site/): feature tour, real screenshots, the
+privacy table and download links with checksums. It is plain HTML and CSS with no
+third-party requests, published by `.github/workflows/site.yml` once GitHub Pages
+is pointed at GitHub Actions for this repository.
+
 ## Why another browser
 
 Chromium already ships a renderer, a sandbox and a web platform. What it does not
@@ -351,6 +358,8 @@ packages/browser/src/
   shared/   types and constants shared by every process
 packages/android/   manifest, resources, MainActivity, gradle-free build.sh
 .github/workflows/dist.yml  deb, AppImage, exe and apk on their native runners
+.github/workflows/site.yml  static site to GitHub Pages
+site/       landing page, stylesheet, icons and screenshots
 docs/       architecture, engine, browser, privacy and distribution notes
 ```
 
