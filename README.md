@@ -11,7 +11,7 @@ The repository is an Apache-2.0 TypeScript monorepo with three packages:
 | --- | --- | --- |
 | `packages/engine` | `@lomesearch/engine` | Crawler, inverted index, BM25 query engine, HTTP query server, IndexNow support |
 | `packages/browser` | `@lomesearch/browser` | Electron browser: tabs, omnibox, internal pages, extensions, downloads, privacy controls |
-| `packages/android` | `org.lomesearch.android` | Android client: WebView shell that talks to a LomeSearch engine |
+| `packages/android` | `org.lomesearch.android` | Android browser: WebView shell with the engine bundled as assets |
 
 Both are written from scratch with no runtime dependencies beyond Node.js and
 Electron. The engine is a plain Node HTTP server; the browser talks to it over
@@ -71,13 +71,14 @@ release page:
 | macOS 11+ | `LomeSearch-<version>-mac-arm64.dmg` / `-mac-x64.dmg` | Apple Silicon or Intel; the first launch needs right-click → Open |
 | Debian, Ubuntu, Mint | `LomeSearch-<version>-linux-amd64.deb` | `sudo apt install ./LomeSearch-<version>-linux-amd64.deb` |
 | Any Linux x86_64 | `LomeSearch-<version>-x86_64.AppImage` | `chmod +x` and run; no install |
-| Android 7+ | `LomeSearch-<version>-android.apk` | Client for an engine on the same device or network |
+| Android 7+ | `LomeSearch-<version>-android.apk` | Browser with the engine and its pages inside the APK |
 
 The Windows executables and the macOS bundles are unsigned, so SmartScreen and
-Gatekeeper warn about an unknown developer until a certificate is configured. The Android client is a
-WebView shell: the engine keeps running where the index lives, which is either a
-desktop on the same network or Termux on the phone itself. `docs/distribution.md`
-explains each artifact, the build commands, the signing keys and the CI workflow.
+Gatekeeper warn about an unknown developer until a certificate is configured. The
+Android app is a WebView shell that carries the engine and its pages as assets: a
+search runs on the phone, so there is no server address to configure and no port to
+open. `docs/distribution.md` explains each artifact, the build commands, the
+signing keys and the CI workflow.
 
 ## Quick start
 

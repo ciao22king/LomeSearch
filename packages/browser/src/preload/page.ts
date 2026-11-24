@@ -108,8 +108,8 @@ if (location.protocol === 'lomesearch:') {
     engine: {
       status: () => ipcRenderer.invoke('engine:status') as Promise<EngineStatus>,
       restart: () => ipcRenderer.invoke('engine:restart') as Promise<EngineStatus>,
-      search: (query, limit, offset) =>
-        ipcRenderer.invoke('engine:search', { query, limit, offset }) as Promise<SearchResponse | null>,
+      search: (query, limit, offset, web) =>
+        ipcRenderer.invoke('engine:search', { query, limit, offset, web }) as Promise<SearchResponse | null>,
       suggest: (query) => ipcRenderer.invoke('engine:suggest', { query }) as Promise<string[]>,
     },
     privacy: {

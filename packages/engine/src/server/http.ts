@@ -62,7 +62,7 @@ export interface SearchServerHandle {
   close(): Promise<void>;
 }
 
-const VERSION = '1.0.0';
+const VERSION = '1.1.0';
 const MAX_BODY_BYTES = 2 * 1024 * 1024;
 const MAX_PAGE = 100;
 const RESULT_PAGE_SIZE = 10;
@@ -266,9 +266,14 @@ export async function startSearchServer(options: SearchServerOptions): Promise<S
         webResults,
       };
 
+      const jsonExtras = {
+        ...(externalOffer ? { offer: externalOffer } : {}),
+        ...(webResults ? { web: webResults } : {}),
+      };
+
       if (!query.trim()) {
         if (wantsJson) {
-          sendJson(response, 200, { query: '', results: [], total: 0, tookMs: 0 });
+          sendJson(response, 200, { query: '', results: [], total: 0, tookMs: 0, ...jsonExtras });
         } else {
           sendHtml(response, 200, renderSearchPage(renderContext, '', null, 1));
         }
@@ -280,7 +285,7 @@ export async function startSearchServer(options: SearchServerOptions): Promise<S
         offset: (page - 1) * RESULT_PAGE_SIZE,
       });
       if (wantsJson) {
-        sendJson(response, 200, { ...result, page });
+        sendJson(response, 200, { ...result, page, ...jsonExtras });
       } else {
         sendHtml(response, 200, renderSearchPage(renderContext, query, result, page));
       }

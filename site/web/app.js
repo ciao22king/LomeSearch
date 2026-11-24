@@ -12,6 +12,10 @@ import { MemoryIndex } from './engine.js';
 const SETTINGS_KEY = 'lomesearch.web.settings';
 const HISTORY_KEY = 'lomesearch.web.history';
 
+// `?embed=1` is how the Android shell loads these pages: the app already has an
+// address bar, so the window chrome is hidden and external links leave the page.
+const EMBED = new URLSearchParams(location.search).has('embed');
+
 const ENGINES = {
   google: { name: 'Google', url: 'https://www.google.com/search?q=%s' },
   bing: { name: 'Bing', url: 'https://www.bing.com/search?q=%s' },
@@ -201,6 +205,10 @@ function activate(id) {
 }
 
 function navigate(entry, { replace = false } = {}) {
+  if (EMBED && entry.kind === 'external') {
+    location.href = entry.url;
+    return;
+  }
   const tab = currentTab();
   if (!tab) {
     openTab(entry);
@@ -483,7 +491,7 @@ function renderNewTab() {
       el(
         'p',
         { class: 'hero__sub' },
-        `Edizione web · ${number(stats?.documents ?? 0)} documenti indicizzati in questa pagina`,
+        `${EMBED ? 'Sul dispositivo' : 'Edizione web'} · ${number(stats?.documents ?? 0)} documenti indicizzati in questa pagina`,
       ),
       el(
         'form',
@@ -1230,6 +1238,7 @@ function toast(message) {
 // -------------------------------------------------------------------- start
 
 async function boot() {
+  if (EMBED) document.documentElement.dataset.embed = 'true';
   applyTheme();
   wire();
   openTab(entryFromHash() ?? newEntry('newtab'));
@@ -1240,9 +1249,13 @@ async function boot() {
 
   const started = performance.now();
   try {
-    const response = await fetch('./data/corpus.json', { cache: 'no-cache' });
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const corpus = await response.json();
+    // The APK inlines the corpus in `corpus.js`, because `fetch` of a relative
+    // file fails on file:// origins; the web edition still loads it over HTTP.
+    const corpus = globalThis.LOME_CORPUS ?? (await (async () => {
+      const response = await fetch('./data/corpus.json', { cache: 'no-cache' });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      return response.json();
+    })());
     state.corpus = corpus;
     state.index = new MemoryIndex(corpus.documents, {});
     state.indexMs = performance.now() - started;

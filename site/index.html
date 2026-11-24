@@ -45,10 +45,10 @@
         "name": "LomeSearch",
         "applicationCategory": "BrowserApplication",
         "operatingSystem": "Linux, Windows, Android",
-        "softwareVersion": "1.0.0",
+        "softwareVersion": "1.1.0",
         "license": "https://www.apache.org/licenses/LICENSE-2.0",
         "url": "https://ciao22king.github.io/LomeSearch/",
-        "downloadUrl": "https://github.com/ciao22king/LomeSearch/releases/tag/v1.0.0",
+        "downloadUrl": "https://github.com/ciao22king/LomeSearch/releases/tag/v1.1.0",
         "offers": { "@type": "Offer", "price": "0", "priceCurrency": "EUR" },
         "description": "Browser desktop e motore di ricerca locale: indice sul disco, crawler proprio, nessuna telemetria."
       }
@@ -193,7 +193,7 @@
             <div class="hero__actions">
               <a class="btn btn--primary" href="#download">
                 <svg aria-hidden="true"><use href="#i-download" /></svg>
-                Scarica la 1.0.0
+                Scarica la 1.1.0
               </a>
               <a class="btn btn--ghost" href="#come-funziona">
                 Come funziona
@@ -644,12 +644,12 @@
                   <span>installazione</span>
                   <button class="code__copy" type="button">Copia</button>
                 </div>
-                <pre>sudo apt install ./LomeSearch-1.0.0-linux-amd64.deb</pre>
+                <pre>sudo apt install ./LomeSearch-1.1.0-linux-amd64.deb</pre>
               </div>
               <div class="dl__actions">
                 <a
                   class="btn btn--primary"
-                  href="https://github.com/ciao22king/LomeSearch/releases/download/v1.0.0/LomeSearch-1.0.0-linux-amd64.deb"
+                  href="https://github.com/ciao22king/LomeSearch/releases/download/v1.1.0/LomeSearch-1.1.0-linux-amd64.deb"
                 >
                   <svg aria-hidden="true"><use href="#i-download" /></svg>
                   Scarica .deb
@@ -672,13 +672,13 @@
                   <span>esecuzione</span>
                   <button class="code__copy" type="button">Copia</button>
                 </div>
-                <pre>chmod +x LomeSearch-1.0.0-x86_64.AppImage
-./LomeSearch-1.0.0-x86_64.AppImage</pre>
+                <pre>chmod +x LomeSearch-1.1.0-x86_64.AppImage
+./LomeSearch-1.1.0-x86_64.AppImage</pre>
               </div>
               <div class="dl__actions">
                 <a
                   class="btn btn--primary"
-                  href="https://github.com/ciao22king/LomeSearch/releases/download/v1.0.0/LomeSearch-1.0.0-x86_64.AppImage"
+                  href="https://github.com/ciao22king/LomeSearch/releases/download/v1.1.0/LomeSearch-1.1.0-x86_64.AppImage"
                 >
                   <svg aria-hidden="true"><use href="#i-download" /></svg>
                   Scarica AppImage
@@ -702,14 +702,14 @@
               <div class="dl__actions">
                 <a
                   class="btn btn--primary"
-                  href="https://github.com/ciao22king/LomeSearch/releases/download/v1.0.0/LomeSearch-1.0.0-setup.exe"
+                  href="https://github.com/ciao22king/LomeSearch/releases/download/v1.1.0/LomeSearch-1.1.0-setup.exe"
                 >
                   <svg aria-hidden="true"><use href="#i-download" /></svg>
                   Scarica installer
                 </a>
                 <a
                   class="btn btn--ghost"
-                  href="https://github.com/ciao22king/LomeSearch/releases/download/v1.0.0/LomeSearch-1.0.0-portable.exe"
+                  href="https://github.com/ciao22king/LomeSearch/releases/download/v1.1.0/LomeSearch-1.1.0-portable.exe"
                 >
                   Portable
                 </a>
@@ -723,17 +723,17 @@
 
             <article class="dl reveal">
               <div class="dl__head">
-                <h3>Android · client</h3>
+                <h3>Android · app</h3>
                 <span class="dl__size">.apk · 45 KB</span>
               </div>
               <p>
-                Un client leggero che si collega a un motore LomeSearch: lo stesso telefono sotto
-                Termux, un desktop sulla stessa rete o un piccolo server di casa. Android 7 o successivo.
+                Il browser con il motore già dentro: le pagine e l'indice viaggiano nell'APK, quindi
+                la ricerca gira sul telefono, senza server e senza porte da aprire. Android 7 o successivo.
               </p>
               <div class="dl__actions">
                 <a
                   class="btn btn--primary"
-                  href="https://github.com/ciao22king/LomeSearch/releases/download/v1.0.0/LomeSearch-1.0.0-android.apk"
+                  href="https://github.com/ciao22king/LomeSearch/releases/download/v1.1.0/LomeSearch-1.1.0-android.apk"
                 >
                   <svg aria-hidden="true"><use href="#i-download" /></svg>
                   Scarica APK
@@ -750,7 +750,7 @@
             macOS: la configurazione <code>dmg</code> e <code>zip</code> è nel repository
             (<code>npm run dist:mac</code>), ma i runner macOS non sono attivi nella CI pubblica. Su
             Apple Silicon funziona anche il motore da sorgente. Tutti i pacchetti:
-            <a href="https://github.com/ciao22king/LomeSearch/releases/tag/v1.0.0">GitHub Releases v1.0.0</a>.
+            <a href="https://github.com/ciao22king/LomeSearch/releases/tag/v1.1.0">GitHub Releases v1.1.0</a>.
           </p>
 
           <div class="code reveal" style="margin-top: 2rem">
@@ -861,9 +861,10 @@ motore · Node ≥ 22   ▼
             <details>
               <summary>Serve un server acceso?</summary>
               <p>
-                No. Il motore è un processo locale che il browser avvia e spegne da solo; se preferisci
-                tenerlo su un'altra macchina, puoi avviarlo con <code>--bind 0.0.0.0</code> e puntare il
-                browser o l'app Android a quell'indirizzo.
+                No. Il motore è un processo locale che il browser avvia e spegne da solo, e sull'app
+                Android è compilato dentro l'APK: la ricerca gira sul telefono. Se preferisci tenerlo su
+                un'altra macchina puoi avviarlo con <code>--bind 0.0.0.0</code> e aprire quell'indirizzo
+                nel browser.
               </p>
             </details>
             <details>
@@ -948,7 +949,7 @@ motore · Node ≥ 22   ▼
         </div>
 
         <div class="footer__legal">
-          <span>LomeSearch 1.0.0</span>
+          <span>LomeSearch 1.1.0</span>
           <span>Nessun cookie, nessun analytics</span>
           <span>Nessuna richiesta a CDN di terze parti</span>
           <span>Pagina statica servita da GitHub Pages</span>

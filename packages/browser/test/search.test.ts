@@ -75,11 +75,11 @@ test('resolveInput separates searches, addresses and internal pages', () => {
   });
   const search = resolveInput('due gatti', settings, status);
   assert.equal(search.kind, 'search');
-  assert.equal(search.url, 'http://127.0.0.1:7717/search?q=due%20gatti');
+  assert.equal(search.url, 'lomesearch://search?q=due%20gatti');
 });
 
 test('buildSearchUrl honours the configured engine', () => {
-  assert.equal(buildSearchUrl(settings, status, 'a b'), 'http://127.0.0.1:7717/search?q=a%20b');
+  assert.equal(buildSearchUrl(settings, status, 'a b'), 'lomesearch://search?q=a%20b');
   const custom = { ...settings, searchEngine: 'custom' as const, customSearchUrl: 'https://example.org/find?q=%s' };
   assert.equal(buildSearchUrl(custom, status, 'a b'), 'https://example.org/find?q=a%20b');
   const withoutPlaceholder = { ...custom, customSearchUrl: 'https://example.org/find' };
@@ -101,7 +101,7 @@ test('searchSuggestions puts addresses before the search entry', () => {
   const searchFirst = searchSuggestions('gatti', settings, status);
   assert.equal(searchFirst.length, 1);
   assert.equal(searchFirst[0]?.type, 'search');
-  assert.equal(searchFirst[0]?.url, 'http://127.0.0.1:7717/search?q=gatti');
+  assert.equal(searchFirst[0]?.url, 'lomesearch://search?q=gatti');
   assert.deepEqual(searchSuggestions('   ', settings, status), []);
 });
 
@@ -124,12 +124,12 @@ test('hybrid mode keeps local results and names the fallback engine', () => {
   const hybrid = { ...settings, searchEngine: 'hybrid' as const, fallbackEngine: 'bing' as const };
   assert.equal(
     buildSearchUrl(hybrid, status, 'due gatti'),
-    'http://127.0.0.1:7717/search?q=due%20gatti&ext=bing&web=1',
+    'lomesearch://search?q=due%20gatti&web=1',
   );
   assert.equal(engineName(hybrid), 'LomeSearch + Bing');
 
   const mojeek = { ...hybrid, fallbackEngine: 'mojeek' as const };
-  assert.equal(buildSearchUrl(mojeek, status, 'x'), 'http://127.0.0.1:7717/search?q=x&ext=mojeek&web=1');
+  assert.equal(buildSearchUrl(mojeek, status, 'x'), 'lomesearch://search?q=x&web=1');
   assert.equal(engineName(mojeek), 'LomeSearch + Mojeek');
 });
 

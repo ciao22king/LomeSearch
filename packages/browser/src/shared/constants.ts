@@ -4,6 +4,7 @@ export const INTERNAL_SCHEME = 'lomesearch';
 
 export const INTERNAL_PAGES = [
   'newtab',
+  'search',
   'settings',
   'history',
   'bookmarks',
@@ -19,6 +20,7 @@ export type InternalPage = (typeof INTERNAL_PAGES)[number];
 
 export const PAGE_TITLES: Record<InternalPage, string> = {
   newtab: 'New tab',
+  search: 'Results',
   settings: 'Settings',
   history: 'History',
   bookmarks: 'Bookmarks',

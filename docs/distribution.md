@@ -11,7 +11,7 @@ npm or a build toolchain.
 | macOS 11+ | `LomeSearch-<version>-mac-arm64.dmg`, `-mac-x64.dmg` | Drag to Applications; unsigned, so the first launch needs right-click → Open |
 | Debian/Ubuntu | `LomeSearch-<version>-linux-amd64.deb` | System install under `/opt/LomeSearch`, desktop entry, hicolor icons |
 | Any Linux | `LomeSearch-<version>-x86_64.AppImage` | Single executable, no install, works without FUSE 3 via `--appimage-extract-and-run` |
-| Android | `LomeSearch-<version>-android.apk` | Client for an engine on the same network; see `packages/android/README.md` |
+| Android | `LomeSearch-<version>-android.apk` | Browser with the engine and its pages bundled; see `packages/android/README.md` |
 
 All artifacts are built from the same commit by the same configuration, and the
 version comes from `packages/browser/package.json`.
@@ -87,9 +87,17 @@ pick the certificate from the keychain).
 
 ### Android
 
-`packages/android/build.sh` needs a JDK 17+ and an Android SDK with
-`build-tools/36.0.0` and `platforms/android-36`. It drives `aapt2`, `javac`, `d8`,
-`zipalign` and `apksigner` directly — no Gradle, no dependency downloads.
+`packages/android/build.sh` needs a JDK 17+, esbuild (from `npm ci`), and an
+Android SDK with `build-tools/36.0.0` and `platforms/android-36`. It drives
+`aapt2`, `javac`, `d8`, `zipalign` and `apksigner` directly — no Gradle, no
+dependency downloads.
+
+The pages and the in-page engine come from `site/web`, so run
+`node scripts/build-web.mjs` first. The script copies them into
+`packages/android/assets/` (git-ignored), inlines the corpus as `corpus.js`
+because `fetch` of a relative file is refused on `file://` origins, and bundles
+`app.js` into one classic script because Chromium will not load module scripts
+from a null origin.
 
 Signing uses `LOMESEARCH_KEYSTORE` and `LOMESEARCH_KEYSTORE_PASSWORD` when set;
 otherwise a local keystore is created once under
@@ -119,7 +127,7 @@ is fine for testing but means the APK cannot be installed over a previous build.
 ## Verifying an artifact
 
 ```bash
-bash packages/android/test.sh                                  # client address logic
+bash packages/android/test.sh                                  # address logic, lome:// routes
 dpkg-deb -I dist/LomeSearch-*-linux-amd64.deb                   # package metadata
 dpkg-deb -c dist/LomeSearch-*-linux-amd64.deb | grep desktop    # desktop entry present
 

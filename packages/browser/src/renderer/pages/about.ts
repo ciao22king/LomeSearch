@@ -19,7 +19,7 @@ main.append(
     'Version',
     null,
     infoRow('LomeSearch', info.appVersion),
-    infoRow('Search engine', info.engineVersion || engine.version || '1.0.0'),
+    infoRow('Search engine', info.engineVersion || engine.version || '1.1.0'),
     infoRow('Electron', info.electron),
     infoRow('Chromium', info.chrome),
     infoRow('Node.js', info.node),

@@ -211,17 +211,36 @@ export interface SearchResult {
   fetchedAt: number;
 }
 
+export interface WebResultItem {
+  title: string;
+  url: string;
+  snippet: string;
+  site: string;
+}
+
+export interface WebResultsBlock {
+  name: string;
+  host: string;
+  items: WebResultItem[];
+  error: string | null;
+}
+
 export interface SearchResponse {
   query: string;
   total: number;
   tookMs: number;
   results: SearchResult[];
   suggestion?: string | null;
+  totalRelation?: 'eq' | 'gte';
+  relaxed?: boolean;
+  web?: WebResultsBlock;
 }
 
 export interface EngineSearchOptions {
   limit?: number;
   offset?: number;
+  /** Ask the engine to query the configured web provider too. */
+  web?: boolean;
 }
 
 export interface ClearDataOptions {
@@ -291,7 +310,12 @@ export interface LomeApi {
   engine: {
     status(): Promise<EngineStatus>;
     restart(): Promise<EngineStatus>;
-    search(query: string, limit?: number, offset?: number): Promise<SearchResponse | null>;
+    search(
+      query: string,
+      limit?: number,
+      offset?: number,
+      web?: boolean,
+    ): Promise<SearchResponse | null>;
     suggest(query: string): Promise<string[]>;
   };
   privacy: {

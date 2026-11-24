@@ -93,6 +93,10 @@ jobs:
       LOMESEARCH_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS || 'lomesearch' }}
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -118,8 +122,12 @@ jobs:
         run: |
           mkdir -p "$(dirname "$LOMESEARCH_KEYSTORE")"
           printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 -d > "$LOMESEARCH_KEYSTORE"
+      - name: Install the pages bundle toolchain
+        run: npm ci
       - name: Test client logic
         run: bash packages/android/test.sh
+      - name: Build the pages bundle
+        run: node scripts/build-web.mjs
       - name: Build apk
         run: bash packages/android/build.sh
       - uses: actions/upload-artifact@v4

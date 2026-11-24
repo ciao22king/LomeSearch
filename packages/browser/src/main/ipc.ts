@@ -210,8 +210,10 @@ export function registerIpc(ctx: AppContext): void {
     await ctx.engine.restart();
     return ctx.engine.getStatus();
   });
-  handle('engine:search', async (_event, payload: { query: string; limit?: number; offset?: number }) =>
-    ctx.engine.search(payload.query, { limit: payload.limit, offset: payload.offset }),
+  handle(
+    'engine:search',
+    async (_event, payload: { query: string; limit?: number; offset?: number; web?: boolean }) =>
+      ctx.engine.search(payload.query, { limit: payload.limit, offset: payload.offset, web: payload.web }),
   );
   handle('engine:suggest', async (_event, payload: { query: string }) => ctx.engine.suggest(payload.query));
 

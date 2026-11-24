@@ -1125,3 +1125,28 @@ html[data-theme="dark"] .handoff a {
   font-weight: 600;
   box-shadow: var(--shadow);
 }
+
+/* ------------------------------------------------------------- embed mode */
+
+/* The Android shell draws its own toolbar, so the page drops the window chrome
+   and the tab strip and fills the screen. */
+html[data-embed="true"] body {
+  padding: 0;
+}
+
+html[data-embed="true"] .window {
+  height: 100dvh;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+html[data-embed="true"] .titlebar,
+html[data-embed="true"] .sidebar,
+html[data-embed="true"] .toolbar {
+  display: none;
+}
+
+html[data-embed="true"] .workspace {
+  grid-template-columns: minmax(0, 1fr);
+}

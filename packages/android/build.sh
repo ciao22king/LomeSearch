@@ -35,6 +35,50 @@ out="$here/build"
 rm -rf "$out"
 mkdir -p "$out/res" "$out/gen" "$out/classes" "$out/dex"
 
+# The pages and the in-page engine are the ones the web edition ships. The APK
+# carries them as assets, so search runs on the device: no server, no port.
+web="$here/../../site/web"
+assets="$here/assets"
+if [[ ! -f "$web/engine.js" ]]; then
+  echo "missing $web/engine.js: run node scripts/build-web.mjs first" >&2
+  exit 1
+fi
+rm -rf "$assets/web"
+mkdir -p "$assets/web/data"
+cp "$web/index.html" "$web/app.css" "$assets/web/"
+cp "$web/data/corpus.json" "$assets/web/data/corpus.json"
+
+# A file:// document is a null origin, and Chromium refuses to load module
+# scripts from one: the pages ship as a single classic script instead.
+esbuild="$here/../../node_modules/.bin/esbuild"
+if [[ ! -x "$esbuild" ]]; then
+  echo "missing esbuild: run npm ci first" >&2
+  exit 1
+fi
+"$esbuild" "$web/app.js" --bundle --format=iife --target=chrome100 \
+  --log-level=warning --outfile="$assets/web/app.js"
+
+# `fetch` of a relative file is refused on file:// origins, so the corpus ships
+# as a script that assigns window.LOME_CORPUS before app.js boots.
+{
+  printf 'window.LOME_CORPUS='
+  cat "$web/data/corpus.json"
+  printf ';\n'
+} > "$assets/web/corpus.js"
+
+# The mascot lives in the site's assets; the APK carries its own copy so the
+# page renders without reaching outside the bundle.
+mkdir -p "$assets/assets/mascot"
+cp "$web/../assets/mascot/mascotte.svg" "$assets/assets/mascot/mascotte.svg"
+
+index="$assets/web/index.html"
+sed -i '/<link rel="icon"/d' "$index"
+sed -i "s|script-src 'self'; style-src 'self'|script-src 'self' file:; style-src 'self' file:|" "$index"
+sed -i "s|img-src 'self' data:|img-src 'self' file: data:|" "$index"
+sed -i "s|font-src 'self'|font-src 'self' file:|" "$index"
+sed -i "s|connect-src 'self'|connect-src 'none'|" "$index"
+sed -i 's|<script type="module" src="./app.js"></script>|<script src="./corpus.js"></script>\n    <script src="./app.js"></script>|' "$index"
+
 echo "compile resources"
 "$build_tools/aapt2" compile --dir "$here/res" -o "$out/res/resources.zip"
 
@@ -47,6 +91,7 @@ echo "link resources"
   --min-sdk-version 24 \
   --target-sdk-version 36 \
   --auto-add-overlay \
+  -A "$assets" \
   "$out/res/resources.zip"
 
 echo "compile java"

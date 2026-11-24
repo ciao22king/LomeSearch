@@ -4,29 +4,38 @@ import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.util.Locale;
 
-/** Address handling: decides between a search on the local engine and a plain navigation. */
+/**
+ * Address handling for the on-device pages.
+ *
+ * The engine runs inside the WebView (the same bundle the web edition uses), so
+ * there is no port and no server address: a bare word becomes a hash on the
+ * bundled search page, anything that looks like a host is a navigation.
+ */
 final class Engine {
-    static final String DEFAULT_ORIGIN = "http://127.0.0.1:7717";
+    static final String ASSET_ROOT = "file:///android_asset/web/";
+    static final String HOME = ASSET_ROOT + "index.html?embed=1";
 
     private Engine() {}
 
-    static String normalizeOrigin(String raw) {
-        String value = raw == null ? "" : raw.trim();
-        if (value.isEmpty()) return DEFAULT_ORIGIN;
-        if (!value.contains("://")) value = "http://" + value;
-        while (value.endsWith("/")) value = value.substring(0, value.length() - 1);
-        return value;
+    static String home() {
+        return HOME;
     }
 
-    static String home(String origin) {
-        return origin + "/";
+    /** `lome://search?q=…` opens the bundled results page. */
+    static String search(String input) {
+        return HOME + "#q=" + encode(input);
     }
 
-    static String search(String origin, String query) {
+    /** `lome://privacy` and friends map onto the pages of the web edition. */
+    static String page(String route) {
+        return HOME + "#lome:" + route;
+    }
+
+    static String encode(String value) {
         try {
-            return origin + "/search?q=" + URLEncoder.encode(query, "UTF-8");
+            return URLEncoder.encode(value == null ? "" : value, "UTF-8");
         } catch (UnsupportedEncodingException impossible) {
-            return origin + "/search?q=" + query;
+            return value == null ? "" : value;
         }
     }
 
@@ -49,11 +58,26 @@ final class Engine {
         return dot > 0 && dot < host.length() - 1 && !host.endsWith(".");
     }
 
-    static String resolve(String origin, String input) {
+    /** A bare host gets https; everything else is a query on the local index. */
+    static String resolve(String input) {
         String value = input.trim();
-        if (looksLikeAddress(value)) {
-            return value.contains("://") ? value : "https://" + value;
-        }
-        return search(origin, value);
+        if (!looksLikeAddress(value)) return search(value);
+        if (value.contains("://")) return value;
+        return "https://" + value;
+    }
+
+    static boolean isAssetUrl(String url) {
+        return url != null && url.startsWith(ASSET_ROOT);
+    }
+
+    /** The address bar shows `lome://…` for the bundled pages instead of a path. */
+    static String displayUrl(String url) {
+        if (url == null) return "";
+        if (!isAssetUrl(url)) return url;
+        String fragment = url.contains("#") ? url.substring(url.indexOf('#') + 1) : "";
+        if (fragment.isEmpty()) return "lome://newtab";
+        if (fragment.startsWith("q=")) return "lome://search?" + fragment;
+        if (fragment.startsWith("lome:")) return "lome://" + fragment.substring("lome:".length());
+        return "lome://" + fragment;
     }
 }

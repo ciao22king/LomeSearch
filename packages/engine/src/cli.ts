@@ -16,7 +16,7 @@ import {
   verifyKeyFile,
 } from './indexnow.js';
 
-const VERSION = '1.0.0';
+const VERSION = '1.1.0';
 const DEFAULT_PORT = 7717;
 
 const HELP = `LomeSearch ${VERSION} - local search engine

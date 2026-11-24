@@ -191,6 +191,7 @@ export class EngineManager {
       limit: String(options.limit ?? 10),
     });
     if (options.offset) params.set('offset', String(options.offset));
+    if (options.web) params.set('web', '1');
     try {
       const response = await fetch(`${this.status.origin}/search?${params.toString()}`, {
         signal: AbortSignal.timeout(SEARCH_TIMEOUT_MS),

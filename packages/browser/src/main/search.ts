@@ -29,8 +29,10 @@ export function normalizeUserUrl(input: string): string | null {
   const value = input.trim();
   if (!value) return null;
   if (/^lome:/i.test(value)) {
-    const page = (value.slice(5).replace(/^\/+/, '').split(/[?#]/)[0] ?? '').replace(/\/+$/, '');
-    return page ? `lomesearch://${page}` : 'lomesearch://newtab';
+    // `lome:search?q=…` keeps its query: the results page reads it.
+    const [pathPart, ...rest] = value.slice(5).replace(/^\/+/, '').split(/(?=[?#])/);
+    const page = (pathPart ?? '').replace(/\/+$/, '');
+    return page ? `lomesearch://${page}${rest.join('')}` : 'lomesearch://newtab';
   }
   if (value.startsWith('lomesearch://')) return value;
   if (/^https?:\/\//i.test(value)) {
@@ -66,12 +68,12 @@ export function normalizeUserUrl(input: string): string | null {
 
 export function engineTemplate(settings: Settings, status: EngineStatus): string {
   if (settings.searchEngine === 'local') {
-    return `${status.origin}/search?q=%s`;
+    return 'lomesearch://search?q=%s';
   }
   if (settings.searchEngine === 'hybrid') {
-    // Local results first; the engine adds its own provider's results when it
-    // has one configured (`web=1`) and always offers the fallback as a link.
-    return `${status.origin}/search?q=%s&ext=${settings.fallbackEngine}&web=1`;
+    // Same internal page; `web=1` asks the engine for its provider's results
+    // when one is configured. Nothing is served over a port to the reader.
+    return 'lomesearch://search?q=%s&web=1';
   }
   if (settings.searchEngine === 'custom') {
     return settings.customSearchUrl.includes('%s')

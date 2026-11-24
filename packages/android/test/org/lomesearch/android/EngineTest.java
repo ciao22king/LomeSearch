@@ -8,9 +8,6 @@ public class EngineTest {
         if (!ok) { failures++; System.out.println("     expected " + expected); }
     }
     public static void main(String[] args) {
-        String o = Engine.normalizeOrigin("http://127.0.0.1:7717");
-        check("origin trailing slash", Engine.normalizeOrigin("192.168.1.10:7717/"), "http://192.168.1.10:7717");
-        check("origin default", Engine.normalizeOrigin("  "), Engine.DEFAULT_ORIGIN);
         check("address domain", Engine.looksLikeAddress("example.com"), true);
         check("address domain path", Engine.looksLikeAddress("example.com/docs"), true);
         check("address ipv4 port", Engine.looksLikeAddress("192.168.1.10:7717"), true);
@@ -19,11 +16,20 @@ public class EngineTest {
         check("query words", Engine.looksLikeAddress("how to cook pasta"), false);
         check("query with dot", Engine.looksLikeAddress("what is 3.14"), false);
         check("query single word", Engine.looksLikeAddress("privacy"), false);
-        check("resolve query", Engine.resolve(o, "privacy browser"), o + "/search?q=privacy+browser");
-        check("resolve domain", Engine.resolve(o, "example.com"), "https://example.com");
-        check("resolve url", Engine.resolve(o, "http://example.com/a"), "http://example.com/a");
-        check("home", Engine.home(o), "http://127.0.0.1:7717/");
-        check("search encode", Engine.search(o, "caffè & tè"), "http://127.0.0.1:7717/search?q=caff%C3%A8+%26+t%C3%A8");
+        check("resolve query", Engine.resolve("privacy browser"), Engine.HOME + "#q=privacy+browser");
+        check("resolve domain", Engine.resolve("example.com"), "https://example.com");
+        check("resolve url", Engine.resolve("http://example.com/a"), "http://example.com/a");
+        check("home", Engine.home(), "file:///android_asset/web/index.html?embed=1");
+        check("search encode", Engine.search("caffè & tè"),
+                "file:///android_asset/web/index.html?embed=1#q=caff%C3%A8+%26+t%C3%A8");
+        check("page route", Engine.page("settings"),
+                "file:///android_asset/web/index.html?embed=1#lome:settings");
+        check("asset url", Engine.isAssetUrl(Engine.home()), true);
+        check("asset url foreign", Engine.isAssetUrl("https://example.com"), false);
+        check("display newtab", Engine.displayUrl(Engine.home()), "lome://newtab");
+        check("display search", Engine.displayUrl(Engine.search("privacy")), "lome://search?q=privacy");
+        check("display settings", Engine.displayUrl(Engine.page("settings")), "lome://settings");
+        check("display web", Engine.displayUrl("https://example.com/a"), "https://example.com/a");
         System.out.println(failures == 0 ? "all checks passed" : failures + " failures");
         if (failures > 0) System.exit(1);
     }

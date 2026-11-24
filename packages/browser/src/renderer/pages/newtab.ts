@@ -70,11 +70,7 @@ indexCard.append(
       await lome.copy('npm run cli -- crawl https://example.com --max-depth 2');
       toast('Command copied');
     }, 'small'),
-    el(
-      'a',
-      { class: 'btn small', href: 'http://127.0.0.1:7717/', target: '_self' },
-      'Open the engine page',
-    ),
+    el('a', { class: 'btn small', href: 'lomesearch://search' }, 'Open search'),
     el('a', { class: 'btn small', href: 'lomesearch://settings' }, 'Engine settings'),
   ),
 );
@@ -117,7 +113,7 @@ async function renderStats(): Promise<void> {
           'small',
           {},
           engine.running
-            ? `${engine.origin} · ${engine.documents.toLocaleString('en-US')} documents · version ${engine.version || '1.0.0'}`
+            ? `${engine.origin} · ${engine.documents.toLocaleString('en-US')} documents · version ${engine.version || '1.1.0'}`
             : engine.error ?? 'Start the engine from settings.',
         ),
       ),
